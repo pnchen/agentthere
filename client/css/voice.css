@@ -1,0 +1,403 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Wakeword Visual
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.voice-icon {
+	transform-origin: 50% 50%;
+}
+
+.voice-active {
+	filter: drop-shadow(0 0 0.35rem rgba(220, 53, 69, 0.35));
+}
+
+.voice-burst .voice-icon {
+	animation: voice-burst-pop 0.72s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.voice-burst {
+	animation: voice-burst-glow 0.72s ease-out;
+}
+
+.voice-visual {
+	--voice-visual-size: 26px;
+	--voice-visual-idle: #6f7d90;
+	--voice-visual-listening: #1d78f2;
+	--voice-visual-active: #eb7b4b;
+	position: relative;
+	display: inline-grid;
+	place-items: center;
+	width: var(--voice-visual-size);
+	height: var(--voice-visual-size);
+	color: var(--voice-visual-idle);
+	transition:
+		color 180ms ease,
+		filter 180ms ease,
+		transform 180ms ease;
+	transform: translateZ(0);
+	filter: drop-shadow(0 0 0 rgba(29, 120, 242, 0));
+	overflow: visible;
+	contain: layout style;
+	will-change: transform, filter;
+	user-select: none;
+	pointer-events: none;
+}
+
+.voice-visual.is-listening,
+.voice-visual.is-loading {
+	color: var(--voice-visual-listening);
+	filter: drop-shadow(0 0 0.32rem rgba(29, 120, 242, 0.14));
+}
+
+.voice-visual.is-active {
+	color: var(--voice-visual-active);
+	filter: drop-shadow(0 0 0.26rem rgba(235, 123, 75, 0.14));
+}
+
+.voice-visual__halo,
+.voice-visual__ring,
+.voice-visual__core {
+	position: absolute;
+	box-sizing: border-box;
+}
+
+.voice-visual__halo {
+	width: 100%;
+	height: 100%;
+	border-radius: 999px;
+	background: radial-gradient(circle at 50% 50%, color-mix(in srgb, currentColor 18%, transparent) 0%, transparent 70%);
+	opacity: 0.28;
+	transform: scale(0.86);
+	transition:
+		opacity 180ms ease,
+		transform 220ms ease;
+	animation: voice-visual-halo-breathe 2.4s ease-in-out infinite;
+}
+
+.voice-visual__ring {
+	border-radius: 999px;
+	border: 1.5px solid color-mix(in srgb, currentColor 72%, transparent);
+	opacity: 0;
+	transform: scale(0.72);
+}
+
+.voice-visual__ring--inner {
+	width: 72%;
+	height: 72%;
+	animation: none;
+	transition: opacity 180ms ease;
+}
+
+.voice-visual__ring--outer {
+	width: 100%;
+	height: 100%;
+	animation: none;
+	transition: opacity 180ms ease;
+}
+
+.voice-visual__core {
+	width: 36%;
+	height: 36%;
+	border-radius: 999px;
+	background: currentColor;
+	box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent);
+	transition:
+		transform 180ms ease,
+		box-shadow 180ms ease,
+		opacity 180ms ease;
+}
+
+.voice-visual.is-off .voice-visual__halo {
+	animation: none;
+	opacity: 0.14;
+	transform: scale(0.8);
+}
+
+.voice-visual.is-off .voice-visual__ring--outer {
+	opacity: 0.16;
+	transform: scale(0.92);
+}
+
+.voice-visual.is-off .voice-visual__core {
+	transform: scale(0.88);
+	opacity: 0.68;
+}
+
+.voice-visual.is-listening .voice-visual__halo {
+	opacity: 0.15;
+	transform: scale(0.82);
+	animation: voice-visual-listening-halo-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+}
+
+.voice-visual.is-listening .voice-visual__ring--outer {
+	opacity: 0.18;
+	transform: scale(0.93);
+	animation: voice-visual-listening-ring-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+}
+
+.voice-visual.is-listening .voice-visual__core {
+	transform: scale(0.9);
+	opacity: 0.72;
+	animation: voice-visual-listening-core-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+}
+
+.voice-visual.is-loading .voice-visual__ring--inner {
+	opacity: 0.42;
+	animation: voice-visual-listen-pulse 2.4s ease-out infinite;
+}
+
+.voice-visual.is-loading .voice-visual__ring--outer {
+	opacity: 0.26;
+	animation: voice-visual-listen-pulse 2.4s ease-out infinite 0.48s;
+}
+
+.voice-visual.is-loading .voice-visual__halo {
+	opacity: 0.24;
+	animation-duration: 2.6s;
+}
+
+.voice-visual.is-active .voice-visual__ring--inner {
+	opacity: 0.42;
+	animation: voice-visual-active-ring 2.35s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+
+.voice-visual.is-active .voice-visual__ring--outer {
+	opacity: 0.18;
+	animation: voice-visual-active-ring 2.35s cubic-bezier(0.2, 0.8, 0.2, 1) infinite 0.58s;
+}
+
+.voice-visual.is-active .voice-visual__core {
+	transform: scale(1.08);
+	background: color-mix(in srgb, currentColor 78%, white);
+	box-shadow: 0 0 0.42rem 0 color-mix(in srgb, currentColor 30%, transparent);
+	animation: voice-visual-core-beat 2.3s ease-in-out infinite;
+}
+
+.voice-visual.is-active .voice-visual__halo {
+	opacity: 0.2;
+	transform: scale(0.88);
+	animation-duration: 2.5s;
+}
+
+.voice-visual.is-loading .voice-visual__ring--inner,
+.voice-visual.is-loading .voice-visual__ring--outer {
+	animation-duration: 1.45s;
+}
+
+.voice-visual.is-loading .voice-visual__core {
+	animation: voice-visual-core-loading 1s linear infinite;
+}
+
+.voice-visual.is-burst {
+	animation: voice-visual-burst-shell 1080ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.voice-visual.is-burst .voice-visual__core {
+	animation: voice-visual-burst-core 1080ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.voice-visual.is-burst .voice-visual__halo {
+	animation: voice-visual-burst-halo 1080ms ease-out;
+	opacity: 0.24;
+}
+
+.voice-visual.is-burst .voice-visual__ring--inner,
+.voice-visual.is-burst .voice-visual__ring--outer {
+	animation: voice-visual-burst-ring 1080ms ease-out;
+	opacity: 0.28;
+}
+
+@keyframes voice-visual-halo-breathe {
+	0%,
+	100% {
+		transform: scale(0.84);
+		opacity: 0.16;
+	}
+	50% {
+		transform: scale(0.92);
+		opacity: 0.26;
+	}
+}
+
+@keyframes voice-visual-listen-pulse {
+	0% {
+		transform: scale(0.72);
+		opacity: 0;
+	}
+	20% {
+		opacity: 0.42;
+	}
+	100% {
+		transform: scale(1.02);
+		opacity: 0;
+	}
+}
+
+@keyframes voice-visual-listening-halo-enter {
+	0% {
+		opacity: 0.08;
+		transform: scale(0.76);
+	}
+	60% {
+		opacity: 0.18;
+		transform: scale(0.86);
+	}
+	100% {
+		opacity: 0.15;
+		transform: scale(0.82);
+	}
+}
+
+@keyframes voice-visual-listening-ring-enter {
+	0% {
+		opacity: 0;
+		transform: scale(0.84);
+	}
+	55% {
+		opacity: 0.22;
+		transform: scale(0.96);
+	}
+	100% {
+		opacity: 0.18;
+		transform: scale(0.93);
+	}
+}
+
+@keyframes voice-visual-listening-core-enter {
+	0% {
+		opacity: 0.64;
+		transform: scale(0.84);
+	}
+	55% {
+		opacity: 0.78;
+		transform: scale(0.94);
+	}
+	100% {
+		opacity: 0.72;
+		transform: scale(0.9);
+	}
+}
+
+@keyframes voice-visual-active-ring {
+	0% {
+		transform: scale(0.76);
+		opacity: 0;
+	}
+	18% {
+		opacity: 0.38;
+	}
+	100% {
+		transform: scale(1.04);
+		opacity: 0;
+	}
+}
+
+@keyframes voice-visual-core-beat {
+	0%,
+	100% {
+		transform: scale(1);
+	}
+	35% {
+		transform: scale(1.1);
+	}
+	68% {
+		transform: scale(1.05);
+	}
+}
+
+@keyframes voice-visual-core-loading {
+	0% {
+		transform: scale(0.96);
+		box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent);
+	}
+	50% {
+		transform: scale(1.14);
+		box-shadow: 0 0 0.55rem 0 color-mix(in srgb, currentColor 38%, transparent);
+	}
+	100% {
+		transform: scale(0.96);
+		box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent);
+	}
+}
+
+@keyframes voice-visual-burst-shell {
+	0% {
+		transform: scale(0.98);
+	}
+	32% {
+		transform: scale(1.04);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+@keyframes voice-visual-burst-core {
+	0% {
+		transform: scale(0.98);
+	}
+	35% {
+		transform: scale(1.09);
+	}
+	100% {
+		transform: scale(1.04);
+	}
+}
+
+@keyframes voice-visual-burst-ring {
+	0% {
+		transform: scale(0.72);
+		opacity: 0;
+	}
+	30% {
+		opacity: 0.28;
+	}
+	100% {
+		transform: scale(1.08);
+		opacity: 0;
+	}
+}
+
+@keyframes voice-visual-burst-halo {
+	0% {
+		transform: scale(0.84);
+		opacity: 0.1;
+	}
+	35% {
+		transform: scale(0.94);
+		opacity: 0.2;
+	}
+	100% {
+		transform: scale(0.9);
+		opacity: 0.14;
+	}
+}
+
+@keyframes voice-burst-pop {
+	0% {
+		transform: scale(0.8);
+		opacity: 0.7;
+	}
+	35% {
+		transform: scale(1.42);
+		opacity: 1;
+	}
+	65% {
+		transform: scale(1.08);
+	}
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+@keyframes voice-burst-glow {
+	0% {
+		filter: drop-shadow(0 0 0 rgba(220, 53, 69, 0));
+	}
+	35% {
+		filter: drop-shadow(0 0 0.9rem rgba(220, 53, 69, 0.7));
+	}
+	100% {
+		filter: drop-shadow(0 0 0.35rem rgba(220, 53, 69, 0.35));
+	}
+}

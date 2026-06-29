@@ -1,0 +1,31 @@
+{
+  "name": "agentthere-stt",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AgentThere STT — DashScope Qwen ASR realtime speech recognition",
+  "type": "module",
+  "dependencies": {
+    "ws": "^8.19.0"
+  },
+  "peerDependencies": {
+    "openclaw": "^2026.5.22"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ],
+    "install": {
+      "npmSpec": "agentthere-stt",
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.4.9"
+    },
+    "compat": {
+      "pluginApi": ">=2026.4.9"
+    }
+  }
+}

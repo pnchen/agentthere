@@ -1,0 +1,35 @@
+<div class="row">
+	<div class="col-12">
+		<div class="d-flex align-items-start">
+			<video-stream-preview
+				class="me-3"
+				style="width: 160px"
+				:stream="stream_user || stream_display || stream_webcam"
+				v-if="(this.preview !== undefined ? this.preview : true) && (stream_user || stream_display || stream_webcam)"
+			></video-stream-preview>
+
+			<div class="flex-grow-1">
+				<a
+					title="打开摄像头"
+					class="btn"
+					:class="{
+                        disabled:webcam===null,
+                        'btn-primary':constraints.webcam,
+                        'btn-outline-secondary':!constraints.webcam
+                    }"
+					@click="constraints.webcam=constraints.webcam?null:webcam"
+					style="font-size: 1rem"
+				>
+					<i class="fab fa-chromecast"></i>
+				</a>
+			</div>
+		</div>
+	</div>
+	<input-webcam
+		class="d-none"
+		@input="stream_webcam=$event"
+		@error="toastr.showError($event);constraints.webcam=false;"
+		v-if="constraints.webcam"
+		:url="constraints.webcam.url"
+	></input-webcam>
+</div>

@@ -1,0 +1,132 @@
+<div>
+	<div class="d-flex flex-column align-items-end" v-if="me.name==target.from.name">
+		<div class="message-data text-end">
+			<user-title :profile="target.from"></user-title>
+		</div>
+
+		<div class="message other-message text-start mw-100">
+			<div class="message-text text-break" v-if="target.file">
+				<voice-item
+					v-if="target.kind === 'voice'"
+					class="mt-2"
+					:file="target.file"
+					:url="target.url"
+					:autoplay="!target.history"
+				></voice-item>
+				<native-file-item v-else class="d-inline-block mt-2" :file="target.file" :url="target.url" :autoplay="false"></native-file-item>
+				<template v-for="track in target.tracks" :key="track.id || track.profile.name">
+					<div class="small text-muted font-italic" v-if="track.chunks_send<target.file.size">
+						{{track.profile.name}}, {{fmt(track.chunks_send,'0.0b')}} / {{fmt(target.file.size,'0.0b')}}, send
+					</div>
+				</template>
+			</div>
+
+			<div class="message-text text-break mt-2" v-if="target.text" v-html="marked(target.text)"></div>
+
+			<div v-if="target.loading">
+				<div class="typing"></div>
+			</div>
+			<div class="agent-meta mt-1" v-if="target.model_info">
+				<span class="badge text-bg-secondary me-1" v-if="target.model_info">{{target.model_info.model}}</span>
+			</div>
+			<div
+				class="small text-danger mt-1 d-flex align-items-center"
+				v-if="!target.to || target.to.length==0"
+				title="This message has no recipient and may not be delivered."
+			>
+				<i class="fas fa-exclamation-triangle me-1"></i>
+				<span>Not delivered: no recipient</span>
+			</div>
+		</div>
+	</div>
+	<div v-else>
+		<user-title :profile="target.from"></user-title>
+
+		<div class="message my-message mw-100">
+			<div class="message-text text-break" v-if="target.file">
+				<voice-item
+					v-if="target.kind === 'voice'"
+					class="mt-2"
+					:file="target.file"
+					:url="target.url"
+					:autoplay="!target.history"
+				></voice-item>
+				<native-file-item v-else class="d-inline-block mt-2" :file="target.file" :url="target.url" :autoplay="false"></native-file-item>
+				<div class="small text-muted font-italic" v-if="!target.url">
+					{{fmt(target.chunks_received,'0.0b')}} / {{fmt(target.file.size,'0.0b')}}, received
+				</div>
+			</div>
+			<div class="agent-reasoning" v-if="target.reasoning">
+				<details :open="!target.reasoning_complete">
+					<summary class="small text-muted">思考过程<span v-if="!target.reasoning_complete" class="reasoning-dots">…</span></summary>
+					<div class="reasoning-text small text-muted mt-1" v-html="marked(target.reasoning)"></div>
+				</details>
+			</div>
+			<!-- Time-ordered segments: agent runs that emit _patch fill segments[]
+			     so text and tool calls render in the order they happened, like
+			     Claude Code. Older history records (and pre-_patch agents) skip
+			     segments entirely and fall back to the legacy block below. -->
+			<template v-if="target.segments && target.segments.length > 0">
+				<template v-for="(seg, si) in target.segments" :key="seg.sid || ('seg'+si)">
+					<div v-if="seg.kind === 'text' && seg.text" class="message-text text-break mt-2" v-html="marked(seg.text)"></div>
+					<details
+						v-else-if="seg.kind === 'tool'"
+						class="tool-segment d-block mt-2 ps-2 py-1"
+						:class="{
+							'is-running': seg.phase === 'start',
+							'is-error': seg.phase === 'error',
+							'is-complete': seg.phase !== 'start' && seg.phase !== 'error'
+						}"
+					>
+						<summary class="tool-summary font-monospace">
+							<b class="me-2">{{seg.name}}</b>
+							<span class="text-muted" v-if="seg.argsSummary">{{seg.argsSummary}}</span>
+						</summary>
+						<pre v-if="format_tool_detail(seg)" class="tool-detail font-monospace text-body-secondary p-2 mt-1 mb-0 rounded-0">
+{{format_tool_detail(seg)}}</pre
+						>
+						<div v-else class="fst-italic text-muted small mt-1">empty</div>
+					</details>
+				</template>
+			</template>
+			<template v-else>
+				<!-- Legacy / history compat: pre-_patch agents and older
+				     IndexedDB records have no segments[]. We render only
+				     `text` (ignore tools/tool_results) so peer-to-peer chat
+				     history stays clean. -->
+				<div class="message-text text-break mt-2" v-if="target.text" v-html="marked(target.text)"></div>
+			</template>
+			<div v-if="target.loading">
+				<div class="typing"></div>
+			</div>
+			<div
+				class="d-flex align-items-center mt-1 gap-2 border-top text-end small font-monospace text-muted ms-auto pt-1"
+				v-if="target.model_info || target.usage"
+			>
+				<button
+					type="button"
+					class="btn btn-link btn-sm p-0 text-muted"
+					v-if="(target.text || (target.segments && target.segments.length)) && !target.loading"
+					@click="copy_text"
+					:title="copied ? '已复制' : '复制'"
+				>
+					<i class="fas" :class="copied ? 'fa-check' : 'fa-copy'"></i>
+					<span class="ms-1" v-if="copied">已复制</span>
+				</button>
+				<small>
+					<b class="me-1" v-if="target.model_info">{{target.model_info.model}}</b>
+					<span class="usage-summary small ms-2" v-if="target.usage">
+						<span class="usage-io">↑{{fmt(target.usage.input || 0, '0a')}} ↓{{fmt(target.usage.output || 0, '0a')}}</span>
+						<span class="usage-sep" v-if="cache_rate != null"> · </span>
+						<span class="usage-cache" :class="{ 'text-danger': cache_rate < 97 }" v-if="cache_rate != null">cache {{cache_rate}}%</span>
+						<span class="usage-sep" v-if="target.usage.duration_ms"> · </span>
+						<span class="usage-duration" v-if="target.usage.duration_ms">{{(target.usage.duration_ms / 1000).toFixed(1)}}s</span>
+					</span>
+				</small>
+			</div>
+		</div>
+	</div>
+	<div class="text-center mt-3" v-if="show_date">
+		<small class="text-muted font-monospace">{{display_date}}</small>
+	</div>
+</div>

@@ -1,0 +1,16 @@
+<div class="d-inline-flex align-items-center">
+	<a
+		href="javascript:;"
+		class="d-inline-flex align-items-center justify-content-center text-decoration-none border-0 bg-transparent p-0"
+		:class="{
+			'voice-active': state === 'active',
+			'voice-burst': active_burst
+		}"
+		:title="state === 'active' ? '🔊 streaming' : '🎤 off'"
+		@click="toggle()"
+		style="line-height: 1"
+	>
+		<voice-visual :state="state" :loading="loading" :burst="active_burst" :size="40"></voice-visual>
+	</a>
+	<small v-if="error" class="text-danger align-self-center ms-1" style="font-size: 0.7rem">{{ error }}</small>
+</div>

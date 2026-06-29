@@ -1,0 +1,4 @@
+<div id="app" style="background-size: 100%; background-repeat: no-repeat; background-position: top center">
+	<router-view ui-view> </router-view>
+	<section :class="{'fixed-bottom':$route.path=='/'}" v-html="footer"></section>
+</div>

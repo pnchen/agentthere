@@ -1,0 +1,250 @@
+<div class="modal fade" data-bs-backdrop="static" tabindex="0">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Settings</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body p-0">
+				<ul class="nav nav-tabs px-3 pt-3" role="tablist">
+					<li class="nav-item" role="presentation">
+						<button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-mqtt" type="button" role="tab">
+							<i class="fas la-broadcast-tower me-1"></i> Signaling
+						</button>
+					</li>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ice" type="button" role="tab">
+							<i class="fas la-server me-1"></i> ICE Servers
+						</button>
+					</li>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-other" type="button" role="tab">
+							<i class="fas la-ellipsis-h me-1"></i> Other
+						</button>
+					</li>
+				</ul>
+
+				<div class="tab-content p-3">
+					<!-- Tab 2: Signaling -->
+					<div class="tab-pane fade show active" id="tab-mqtt" role="tabpanel">
+						<div class="d-flex align-items-center gap-2 mb-3 p-2 rounded bg-light">
+							<i
+								class="fs-5"
+								:class="{
+						'fas la-plug text-success': mqtt_state.connection === 'connected',
+						'fas la-sync-alt fa-spin text-warning': mqtt_state.connection === 'connecting',
+						'fas la-exclamation-triangle text-danger': mqtt_state.connection === 'error',
+						'fas la-wifi text-muted': mqtt_state.connection === 'offline',
+						'fas la-plug text-muted': !['connected', 'connecting', 'error', 'offline'].includes(mqtt_state.connection)
+					}"
+							></i>
+							<div>
+								<span
+									class="fw-semibold"
+									:class="{
+							'text-success': mqtt_state.connection === 'connected',
+							'text-warning': mqtt_state.connection === 'connecting',
+							'text-danger': mqtt_state.connection === 'error',
+							'text-muted': ['disconnected', 'offline', 'reconnecting'].includes(mqtt_state.connection)
+						}"
+									>{{ mqtt_state.connection }}</span
+								>
+								<div class="small text-muted">{{ brokerDisplayUrl }}</div>
+							</div>
+						</div>
+						<hr />
+						<div class="mb-2">
+							<label class="form-label small mb-1"><i class="fa fa-asterisk text-danger"></i> Namespace</label>
+							<div class="input-group input-group-sm">
+								<input type="text" class="form-control font-monospace" v-model="item.signaling.namespace" placeholder="" />
+								<button
+									v-if="!item.signaling.namespace"
+									class="btn btn-outline-secondary"
+									type="button"
+									@click="randomNamespace()"
+									title="Random namespace"
+								>
+									Rand
+								</button>
+							</div>
+							<small class="text-muted"> Shared secret isolating MQTT topics across deployments. Use an unpredictable random string. </small>
+						</div>
+
+						<div class="mb-2">
+							<label class="form-label small mb-1"><i class="fa fa-asterisk text-danger"></i> Broker URL</label>
+							<input
+								type="text"
+								class="form-control form-control-sm font-monospace"
+								v-model="item.signaling.url"
+								placeholder="wss://your-broker.example.com:8084/mqtt"
+							/>
+							<small class="text-muted">WebSocket URL of the MQTT broker, e.g. <code>wss://host:port/mqtt</code></small>
+						</div>
+						<div class="mb-2">
+							<label class="form-label small mb-1">Username</label>
+							<input type="text" class="form-control form-control-sm" v-model="item.signaling.username" placeholder="(optional)" />
+						</div>
+						<div class="mb-2">
+							<label class="form-label small mb-1">Password</label>
+							<input
+								type="password"
+								class="form-control form-control-sm"
+								v-model="item.signaling.password"
+								placeholder="(optional)"
+								autocomplete="off"
+							/>
+						</div>
+						<div class="alert alert-warning small py-1 px-2 mt-2 mb-0">All clients and the OpenClaw plugin must use the same namespace and broker.</div>
+					</div>
+
+					<!-- Tab 3: ICE Servers -->
+					<div class="tab-pane fade" id="tab-ice" role="tabpanel">
+						<small class="text-muted d-block mb-2"
+							>STUN helps peers discover their public IP. TURN relays media when direct connection fails.</small
+						>
+
+						<div class="card bg-light border-0 mb-1" v-for="(server, i) in item.ice_servers" :key="i">
+							<div class="card-body py-2 px-3">
+								<div class="d-flex align-items-center gap-2 mb-2">
+									<select class="form-select form-select-sm" style="width: auto" v-model="iceTypes[i]" @change="onIceTypeChange(i)">
+										<option value="stun">STUN</option>
+										<option value="turn">TURN</option>
+									</select>
+									<button type="button" class="btn btn-sm btn-outline-danger ms-auto" @click="removeIceServer(i)" title="Remove">
+										<i class="fa fa-times"></i>
+									</button>
+								</div>
+								<div class="mb-2">
+									<input
+										type="text"
+										class="form-control form-control-sm font-monospace"
+										v-model="server.urls"
+										:placeholder="iceTypes[i] === 'turn' ? 'turn:turn.example.com:3478' : 'stun:stun.example.com:3478'"
+									/>
+								</div>
+								<template v-if="iceTypes[i] === 'turn'">
+									<div class="row gx-2">
+										<div class="col-6">
+											<input type="text" class="form-control form-control-sm" v-model="server.username" placeholder="Username" />
+										</div>
+										<div class="col-6">
+											<input
+												type="password"
+												class="form-control form-control-sm"
+												v-model="server.credential"
+												placeholder="Password"
+												autocomplete="off"
+											/>
+										</div>
+									</div>
+								</template>
+							</div>
+						</div>
+						<button type="button" class="btn btn-sm btn-outline-secondary mt-1 mb-3" @click="addIceServer">
+							<i class="fas la-plus me-1"></i> Add Server
+						</button>
+						<button type="button" class="btn btn-sm btn-outline-danger mt-1 mb-3 ms-1" @click="resetIceServers">
+							<i class="fas la-undo me-1"></i> Reset Default
+						</button>
+					</div>
+
+					<!-- Tab 4: Other -->
+					<div class="tab-pane fade" id="tab-other" role="tabpanel">
+						<div class="form-check form-switch mb-3">
+							<input class="form-check-input" type="checkbox" id="theme-switch" v-model="darkMode" />
+							<label class="form-check-label" for="theme-switch">Dark mode</label>
+						</div>
+
+						<hr />
+
+						<div class="form-check form-switch">
+							<input class="form-check-input" type="checkbox" id="vad-enabled-switch" v-model="item.vad.enabled" />
+							<label class="form-check-label" for="vad-enabled-switch">Voice activity detection</label>
+						</div>
+						<small class="text-muted d-block mb-2">When off, audio is sent directly to AI without voice activity gating.</small>
+
+						<template v-if="item.vad.enabled">
+							<hr />
+							<h6 class="fw-semibold mb-2">VAD Tuning</h6>
+							<div class="mb-2">
+								<label class="form-label small mb-1">Speech Threshold</label>
+								<input
+									type="number"
+									class="form-control form-control-sm"
+									v-model.number="item.vad.positive_speech_threshold"
+									step="0.05"
+									min="0"
+									max="1"
+								/>
+								<small class="text-muted">Model output (0–1) ≥ this → frame is "speech". Default 0.40</small>
+							</div>
+							<div class="mb-2">
+								<label class="form-label small mb-1">Silence Threshold</label>
+								<input
+									type="number"
+									class="form-control form-control-sm"
+									v-model.number="item.vad.negative_speech_threshold"
+									step="0.05"
+									min="0"
+									max="1"
+								/>
+								<small class="text-muted">Model output (0–1) ≤ this for redemption duration → speech has ended. Default 0.16</small>
+							</div>
+							<div class="mb-2">
+								<label class="form-label small mb-1">Redemption (ms)</label>
+								<input
+									type="number"
+									class="form-control form-control-sm"
+									v-model.number="item.vad.redemption_ms"
+									step="100"
+									min="0"
+									max="5000"
+								/>
+								<small class="text-muted">Grace period after silence before closing the gate. Default 1200</small>
+							</div>
+							<div class="mb-2">
+								<label class="form-label small mb-1">Pre-speech Pad (ms)</label>
+								<input
+									type="number"
+									class="form-control form-control-sm"
+									v-model.number="item.vad.pre_speech_pad_ms"
+									step="50"
+									min="0"
+									max="2000"
+								/>
+								<small class="text-muted">Audio kept before detected speech onset. Default 600</small>
+							</div>
+							<div class="mb-2">
+								<label class="form-label small mb-1">Min Speech (ms)</label>
+								<input
+									type="number"
+									class="form-control form-control-sm"
+									v-model.number="item.vad.min_speech_ms"
+									step="50"
+									min="0"
+									max="2000"
+								/>
+								<small class="text-muted">Minimum continuous speech to open the gate. Default 220</small>
+							</div>
+							<div class="mb-2">
+								<label class="form-label small mb-1">Open Delay (ms)</label>
+								<input
+									type="number"
+									class="form-control form-control-sm"
+									v-model.number="item.vad.open_delay_ms"
+									step="50"
+									min="0"
+									max="2000"
+								/>
+								<small class="text-muted">Delay between speech confirmation and opening the audio gate. Default 500</small>
+							</div>
+						</template>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" v-if="item_changed" @click="confirm()">Save</button>
+			</div>
+		</div>
+	</div>
+</div>

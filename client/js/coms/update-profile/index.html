@@ -1,0 +1,58 @@
+<div class="modal fade" data-bs-backdrop="static" tabindex="0">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Profile</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body p-0">
+				<div class="tab-content p-3">
+					<!-- Tab 1: Profile -->
+					<div class="tab-pane fade show active" id="tab-profile" role="tabpanel">
+						<!-- Profile -->
+						<div class="mb-3">
+							<input type="text" class="form-control form-control-sm" v-model="item.profile.name" placeholder="Your name" />
+						</div>
+						<div v-if="item.profile.name" class="mb-3">
+							<label class="form-label small mb-1">Avatar</label>
+							<div class="d-flex align-items-center gap-3">
+								<avatar
+									class="d-none"
+									ref="avatar"
+									:variant="item.profile.boring_avatar.variant"
+									:colors="item.profile.boring_avatar.colors"
+									:name="item.profile.boring_avatar.salt"
+									:size="80"
+								/>
+								<img v-if="item.profile.avatar" :src="item.profile.avatar" style="height: 3rem; border-radius: 50%" />
+								<div>
+									<select class="form-select form-select-sm mb-1" v-model="item.profile.boring_avatar.variant">
+										<option v-for="v in variants" :value="v">{{ v }}</option>
+									</select>
+									<div class="d-flex gap-2">
+										<input
+											type="color"
+											class="form-control form-control-color form-control-sm p-1"
+											style="width: 40px; height: 32px"
+											v-model="item.profile.boring_avatar.colors[0]"
+										/>
+										<input
+											type="color"
+											class="form-control form-control-color form-control-sm p-1"
+											style="width: 40px; height: 32px"
+											v-model="item.profile.boring_avatar.colors[1]"
+										/>
+										<button type="button" class="btn btn-sm btn-outline-secondary" @click="random_salt()">Random</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" v-if="item_changed" @click="confirm()">Save</button>
+			</div>
+		</div>
+	</div>
+</div>

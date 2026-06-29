@@ -1,0 +1,40 @@
+<div class="position-relative">
+	<video
+		class="w-100"
+		:class="{'d-none':remote_stream_type!='video','d-block':remote_stream_type=='video'}"
+		autoplay
+		ref="video"
+		controls
+		playsinline
+		@play="interact_error_tip=null"
+	></video>
+	<audio class="d-none" ref="audio" playsinline @play="interact_error_tip=null"></audio>
+	<div class="m-3" v-if="remote_stream_type !== 'none'">
+		<button
+			type="button"
+			class="remote-audio-gate"
+			:class="{'is-muted':remote_audio_muted}"
+			@click="toggle_remote_audio_muted"
+			:title="remote_audio_muted?'打开远端声音':'静音远端声音'"
+			:aria-label="remote_audio_muted?'打开远端声音':'静音远端声音'"
+		>
+			<i class="fa" :class="{'fa-volume-up':!remote_audio_muted,'fa-volume-mute':remote_audio_muted}"></i>
+		</button>
+	</div>
+	<span class="text-danger mx-3 mb-3" v-if="interact_error_tip"><i class="fa fa-arrow-up"></i> {{interact_error_tip}}</span>
+
+	<!-- <div class="text-center p-3 text-muted" v-if="remote_stream_type=='none'">
+		<i class="fa fa-user" style="font-size: 5rem"></i>
+	</div> -->
+	<!-- me:{{channel_me}} remote:{{channel_remote}} -->
+	<div class="container-fluid" style="top: 0px; right: 0px" v-if="pc">
+		<div class="row">
+			<!-- <div>{{lifetime_negotiation}}</div> -->
+			<div class="col-12 small text-muted fw-lighter font-monospace">
+				<span v-if="state.iceConnectionState!='connected'">iceConnection: {{state.iceConnectionState ||"-"}} <br /></span>
+				<span v-if="state.iceGatheringState!='complete'">iceGathering: {{state.iceGatheringState ||"-"}} <br /></span>
+				<span v-if="state.connectionState!='connected'">connection: {{state.connectionState ||"-"}} <br /></span>
+			</div>
+		</div>
+	</div>
+</div>

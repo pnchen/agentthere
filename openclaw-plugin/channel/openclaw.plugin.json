@@ -1,0 +1,91 @@
+{
+  "id": "agentthere",
+  "channels": ["agentthere"],
+  "channelConfigs": {
+    "agentthere": {
+      "label": "AgentThere",
+      "description": "Browser-to-agent terminal via WebRTC DataChannel + MQTT signaling",
+      "schema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  },
+  "contracts": {},
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "$defs": {
+      "mqtt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string" },
+          "username": { "type": "string" },
+          "password": { "type": "string" },
+          "namespace": { "type": "string", "description": "Namespace prefix shared by agent and all browser peers. Without it all MQTT topic IDs are still hashed, but cross-deployment collision is possible on a public broker." }
+        }
+      },
+      "agentIdentity": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "avatar": { "type": "string" },
+          "id": { "type": "string" }
+        }
+      },
+      "iceServer": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "urls": {
+            "anyOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            ]
+          },
+          "username": { "type": "string" },
+          "credential": { "type": "string" }
+        },
+        "required": ["urls"]
+      },
+      "group": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "openclaw_agent_id": { "type": "string" },
+          "systemPrompt": { "type": "string" },
+          "skills": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "properties": {
+      "enabled": { "type": "boolean" },
+      "dmPolicy": {
+        "type": "string",
+        "enum": ["open", "pairing", "allowlist", "disabled"]
+      },
+      "allowFrom": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "mqtt": { "$ref": "#/$defs/mqtt" },
+      "agent": { "$ref": "#/$defs/agentIdentity" },
+      "iceServers": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/iceServer" }
+      },
+      "groups": {
+        "type": "object",
+        "additionalProperties": { "$ref": "#/$defs/group" }
+      }
+    }
+  }
+}

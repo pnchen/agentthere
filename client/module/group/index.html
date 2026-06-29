@@ -1,0 +1,301 @@
+<div class="position-relative ntf d-flex flex-column" :class="{ 'sidebar-open':sidebar_open}" style="min-height: 100dvh">
+	<div
+		v-if="profile.name && mqtt_state.unreachable"
+		class="alert text-center py-2 mb-0 rounded-0 sticky-top"
+		:class="!settings.signaling.url ? 'alert-warning' : 'alert-danger'"
+	>
+		<i class="las la-exclamation-triangle me-2"></i>
+		<span v-if="!settings.signaling.url">MQTT broker not configured. Messages cannot be delivered.</span>
+		<span v-else>MQTT connection error. Check your broker settings.</span>
+		<a class="ms-2 fw-semibold" href="javascript:;" @click="params.settings_open = true">Configure</a>
+	</div>
+	<div class="sidebar-mask bg-transparent" @click="sidebar_open = false"></div>
+	<div class="sidebar d-block pb-5 px-3 border-end bg-white pt-5 pt-lg-0">
+		<action-menu v-if="!is_desktop">
+			<template v-slot:toggle>
+				<img v-if="profile.avatar" :src="profile.avatar" class="me-3" style="height: 1.6rem" />
+				<small>{{profile.name}} </small>
+			</template>
+			<a class="dropdown-item" href="javascript:;" @click="params.profile_open = true">Profile</a>
+			<a class="dropdown-item" href="javascript:;" @click="params.storage_manager_open = true">Storage</a>
+			<a class="dropdown-item" href="javascript:;" @click="params.settings_open = true">Settings</a>
+		</action-menu>
+		<div class="mt-3" v-if="profile.name">
+			<div class="">
+				<div class="mx-3 mb-3" :key="item_member.id" v-for="item_member in items_member ">
+					<div class="card bg-light border-0" v-if="mqtt_state.ready">
+						<div class="card-header px-3 border-bottom-0 d-flex align-items-center">
+							<user-title :profile="item_member.profile"></user-title>
+							<!-- <button type="button" class="btn-close ms-auto" @click="remove_member(item_member)">
+								<span aria-hidden="true">&times;</span>
+							</button> -->
+						</div>
+						<rtc-peer
+							class="bg-light"
+							ref="peer"
+							:peer-id="peer_id"
+							:remote-id="item_member.id"
+							:peer-profile="profile"
+							:remote-profile="item_member.profile"
+							:uid="uid"
+							:group="group"
+							:local-streams="item_member.profile?.agent ? (streams_voice ? [streams_voice] : null) : streams_media"
+							@connection-state-changed="on_connection_state_changed(item_member, $event)"
+							@chunk-send="on_chunk_send($event)"
+							@message="message_received"
+						></rtc-peer>
+					</div>
+				</div>
+				<div class="alert alert-light bg-transparent border-0 mx-3 text-center mt-5" role="alert" v-if="items_member?.length==0">
+					Waiting For Peer ...
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="flex-grow-1 d-flex flex-column main-content">
+		<header
+			class="navbar d-flex align-items-center justify-content-start main-header bg-transparent border-0 sticky-top"
+			style="
+				box-shadow: none;
+				background: linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+			"
+		>
+			<div
+				class="position-absolute"
+				style="
+					top: 0;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					backdrop-filter: blur(10px);
+					-webkit-backdrop-filter: blur(10px);
+					mask: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 60%, rgba(0, 0, 0, 0) 100%);
+					-webkit-mask: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 60%, rgba(0, 0, 0, 0) 100%);
+					pointer-events: none;
+					z-index: -1;
+				"
+			></div>
+			<a
+				href="javascript:;"
+				class="btn btn-sm d-flex align-items-center ps-0 me-1"
+				@click="sidebar_open = !sidebar_open"
+				v-if="!is_desktop"
+			>
+				<i class="fa fa-bars ms-1" style="font-size: 1.4rem"></i>
+				<span class="badge text-bg-secondary font-monospace">{{items_member?.length}}</span>
+			</a>
+			<a href="./" class="home-link router-link-active text-dark" style="text-decoration: none">
+				<img class="me-1" style="height: 2rem" src="assets/image/logo.png" />
+				<span class="site-name align-middle"> {{group}} </span>
+			</a>
+			<div class="flex-grow-1 justify-content-center" style="width: 320px"></div>
+			<nav class="nav-links" v-if="is_desktop">
+				<action-menu>
+					<template v-slot:toggle>
+						<img v-if="profile.avatar" :src="profile.avatar" class="me-2" style="height: 1.6rem" />{{profile.name}}
+					</template>
+					<a class="dropdown-item" href="javascript:;" @click="params.profile_open = true">Profile</a>
+					<a class="dropdown-item" href="javascript:;" @click="params.storage_manager_open = true">Storage</a>
+					<a class="dropdown-item" href="javascript:;" @click="params.settings_open = true">Settings</a>
+				</action-menu>
+			</nav>
+		</header>
+		<div class="mx-auto flex-grow-1 w-100" style="max-width: 720px">
+			<div class="chat-history px-3">
+				<div v-if="hasMoreMessages" class="text-center py-3">
+					<a href="javascript:;" class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="params.chat_history_open = true">
+						<i class="fa fa-history me-1"></i> Message History
+					</a>
+				</div>
+				<chat-message
+					class="mt-3 mb-5"
+					:target="message"
+					:prev="messages[index-1]"
+					:me="profile"
+					v-for="(message, index) in messages"
+					:key="message.id || index"
+				></chat-message>
+				<div class="alert alert-secondary m-5 border-0" role="alert" v-if="messages && messages.length==0">No message</div>
+				<div class="py-5"></div>
+			</div>
+		</div>
+		<div class="mx-auto w-100 d-flex px-2 px-md-0" ref="input_area" style="max-width: 720px; position: sticky; bottom: 0">
+			<!-- New messages indicator -->
+			<transition name="fade">
+				<a v-if="hasNewMessagesBelow" href="javascript:;" class="new-messages-btn" @click="scrollToBottomNow()">
+					<i class="fa fa-arrow-down me-1"></i> New messages
+				</a>
+			</transition>
+			<div
+				class="container-fluid bg-white position-relative px-3 px-md-4 chat-input-shell"
+				:class="{'no-peer-shake': input_shake}"
+				style="margin-bottom: 0.5rem"
+			>
+				<input-voice
+					class="position-absolute start-50 translate-middle-x z-3"
+					style="bottom: calc(100% + 0.4rem); z-index: 1060"
+					:keepalive_at="last_message_date"
+					@stream-changed="streams_voice_source = $event || null; if(!settings.vad.enabled) streams_voice = streams_voice_source;"
+				></input-voice>
+				<vad
+					v-if="settings.vad.enabled"
+					:stream-source="streams_voice_source"
+					@stream-change="streams_voice = $event"
+					:settings="settings.vad"
+				></vad>
+				<!-- no peer connected hint -->
+				<transition name="hint-pop">
+					<div
+						class="no-peer-hint position-absolute start-50 translate-middle-x d-flex align-items-center"
+						style="bottom: calc(100% + 8px); z-index: 1060"
+						v-if="no_peer_hint"
+					>
+						<span class="no-peer-hint__dot"></span>
+						<i class="fas la-plug me-2"></i>
+						<span class="fw-semibold">No peer connected</span>
+						<span class="text-white-50 ms-2 small">Messages cannot be delivered</span>
+					</div>
+				</transition>
+				<!-- control command dropdown -->
+				<div
+					class="control-dropdown position-absolute w-100 px-2"
+					style="bottom: 100%; left: 0; z-index: 1050"
+					v-if="control_active && control_commands_filtered.length > 0"
+				>
+					<div class="list-group shadow-sm mb-1" style="max-height: 200px; overflow-y: auto">
+						<a
+							href="javascript:;"
+							class="list-group-item list-group-item-action py-2 px-3 d-flex align-items-center"
+							:class="{ active: control_index === index }"
+							v-for="(cmd, index) in control_commands_filtered"
+							:key="cmd.name"
+							@mousedown.prevent="select_control(cmd)"
+						>
+							<i
+								class="fas la-fw me-2"
+								:class="[
+									cmd.icon,
+									control_index === index
+										? ''
+										: cmd.variant === 'danger' || cmd.variant === 'primary'
+											? 'text-danger'
+											: 'text-muted'
+								]"
+								style="font-size: 1.1rem"
+							></i>
+							<span class="font-monospace fw-semibold me-2">{{cmd.name}}</span>
+							<small :class="{'text-muted': control_index !== index}">{{cmd.desc}}</small>
+						</a>
+					</div>
+				</div>
+				<div
+					class="mention-dropdown position-absolute w-100 px-2"
+					style="bottom: 100%; left: 0; z-index: 1050"
+					v-if="mention_active && mention_peers.length > 0"
+				>
+					<div class="list-group shadow-sm mb-1" style="max-height: 200px; overflow-y: auto">
+						<a
+							href="javascript:;"
+							class="list-group-item list-group-item-action py-2 px-3 d-flex align-items-center"
+							:class="{ active: mention_index === index }"
+							v-for="(peer, index) in mention_peers"
+							:key="peer.id"
+							@mousedown.prevent="select_mention(peer)"
+						>
+							<img v-if="peer.profile.avatar" :src="peer.profile.avatar" class="me-2" style="height: 1.4rem; border-radius: 50%" />
+							<span>{{peer.profile.name}}</span>
+							<span v-if="peer.profile && peer.profile.agent" class="badge text-bg-info ms-1">AI</span>
+						</a>
+					</div>
+				</div>
+				<div class="row pt-3 pb-2 gx-3">
+					<div class="col-12">
+						<div class="position-relative">
+							<input-text
+								ref="input_text"
+								rows="1"
+								v-model="params.text"
+								placeholder="Type a message ..., / commands, @ mention"
+								class="form-control border-0 px-0"
+								:mention-active="mention_active && mention_peers.length > 0"
+								:control-active="control_active && control_commands_filtered.length > 0"
+								@up="to_pre_input_history()"
+								@down="to_next_input_history()"
+								@commit="commit_message()"
+								@mention-up="mention_navigate_up()"
+								@mention-down="mention_navigate_down()"
+								@mention-select="select_mention(mention_peers[mention_index])"
+								@mention-cancel="cancel_mention()"
+								@control-up="control_navigate_up()"
+								@control-down="control_navigate_down()"
+								@control-select="select_control(control_commands_filtered[control_index])"
+								@control-cancel="cancel_control()"
+								:max-height="300"
+							></input-text>
+						</div>
+					</div>
+					<div class="col-12">
+						<div class="position-relative d-flex mt-1">
+							<input-media
+								ref="media"
+								class="flex-grow-1"
+								:video="items_member?.length>0 && params.video"
+								:audio="items_member?.length>0 && params.audio"
+								@stream-changed="streams_media = $event"
+								@select-file="params.file_to_send=$event[0]"
+								@input-code="$refs.input_text.insert_code_block()"
+							></input-media>
+
+							<div class="position-relative">
+								<a
+									ref="commit"
+									href="javascript:;"
+									class="btn btn-secondary rounded-circle font-monospace"
+									:class="{disabled:$refs.input_speech?.thinking}"
+									v-if="params.text"
+									@click="commit_message()"
+									style="padding-left: 0.64rem; padding-right: 0.64rem"
+									><i class="fa fa-arrow-up"></i
+								></a>
+								<!-- <a href="javascript:;" class="btn btn-link" v-if="!params.text">Send</a> -->
+							</div>
+						</div>
+						<div class="mt-1"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<rtc-group-signaling
+		v-if="profile.name && mqtt_state.ready"
+		:group="group"
+		:peer_id="peer_id"
+		:profile="{name:profile.name, avatar:profile.avatar}"
+		@member-detected="add_member($event)"
+		@member-left="remove_member($event)"
+		@member-lost="mark_member_lost($event)"
+	></rtc-group-signaling>
+	<update-profile v-if="!profile.name"></update-profile>
+	<send-files-confirm
+		v-if="params.file_to_send"
+		v-bind:target="[params.file_to_send]"
+		@cancel="params.file_to_send=null;"
+		@ok="send_file(params.file_to_send);params.file_to_send=null;"
+	>
+	</send-files-confirm>
+
+	<storage-manager
+		v-if="params.storage_manager_open"
+		:group="group"
+		@cancel="params.storage_manager_open = false"
+		@cleaned="release_all_object_urls(); load_messages_from_store();"
+	>
+	</storage-manager>
+
+	<chat-history v-if="params.chat_history_open" :group="group" :me="profile" @cancel="params.chat_history_open = false"> </chat-history>
+
+	<update-profile v-if="params.profile_open" @cancel="params.profile_open = false" @ok="params.profile_open = false"></update-profile>
+
+	<system-settings v-if="params.settings_open" @cancel="params.settings_open = false" @ok="params.settings_open = false"></system-settings>
+</div>

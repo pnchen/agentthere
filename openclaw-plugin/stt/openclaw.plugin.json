@@ -1,0 +1,24 @@
+{
+  "id": "agentthere-stt",
+  "name": "AgentThere STT (Qwen ASR)",
+  "description": "DashScope Qwen ASR realtime speech recognition via WebSocket",
+  "enabledByDefault": false,
+  "contracts": {
+    "realtimeVoiceProviders": ["agentthere-stt"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "wss": {
+        "type": "string",
+        "description": "DashScope WebSocket endpoint, e.g. wss://dashscope.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "DashScope API key (bearer token)"
+      }
+    },
+    "required": []
+  }
+}

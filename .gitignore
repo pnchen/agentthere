@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-runtime/
+client/dist/
+*.log
+.env
+.env.*
+.DS_Store
+stats.html
+.claude/
+.playwright-mcp/

@@ -1,0 +1,23 @@
+<span>
+	<template v-if="url || object_url">
+		<a :href="url || object_url" v-if="mimetype.indexOf('image')==0" target="_blank">
+			<img :src="url || object_url" class="attachment-image mw-100" style="max-height: 320px" />
+		</a>
+		<span v-else-if="mimetype.indexOf('audio')==0">
+			<audio :src="url || object_url" controls playsinline :title="file.name" :autoplay="autoplay" @play="on_media_play"></audio>
+		</span>
+		<span v-else-if="mimetype.indexOf('video')==0">
+			<video :src="url || object_url" controls playsinline class="mw-100" style="max-height: 320px" :title="file.name" @play="on_media_play"></video>
+		</span>
+		<a :href="url || object_url" v-else target="_blank" :download="file.name">
+			<i class="fa" :class="icon_fa"></i>
+			<span class="font-italic">{{file.name}}</span>
+		</a>
+	</template>
+	<template v-else>
+		<span>
+			<i class="fa" :class="icon_fa"></i>
+			<span class="font-italic">{{file.name}}</span>
+		</span>
+	</template>
+</span>

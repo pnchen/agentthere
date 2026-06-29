@@ -1,0 +1,59 @@
+{
+    "name": "agentthere-channel",
+    "version": "0.1.0",
+    "private": true,
+    "description": "AgentThere plugin for OpenClaw — browser-to-agent terminal via WebRTC DataChannel + MQTT signaling",
+    "type": "module",
+    "dependencies": {
+        "@ricky0123/vad-node": "^0.0.3",
+        "mqtt": "^5.10.4",
+        "node-datachannel": "^0.32.3",
+        "onnxruntime-node": "^1.26.0",
+        "opus-decoder": "^0.7.11",
+        "opusscript": "0.1.1",
+        "remove-markdown": "^0.6.3",
+        "ws": "^8.19.0"
+    },
+    "peerDependencies": {
+        "openclaw": ">=2026.4.9"
+    },
+    "peerDependenciesMeta": {
+        "openclaw": {
+            "optional": true
+        }
+    },
+    "openclaw": {
+        "extensions": [
+            "./index.js"
+        ],
+        "setupEntry": "./setup-entry.js",
+        "channel": {
+            "id": "agentthere",
+            "label": "AgentThere",
+            "selectionLabel": "AgentThere (MQTT + WebRTC)",
+            "detailLabel": "AgentThere",
+            "docsPath": "/channels/agentthere",
+            "docsLabel": "agentthere",
+            "blurb": "Browser-to-agent terminal via MQTT signaling and WebRTC data channels.",
+            "systemImage": "network",
+            "markdownCapable": true
+        },
+        "install": {
+            "npmSpec": "agentthere-channel",
+            "defaultChoice": "npm",
+            "minHostVersion": ">=2026.4.9"
+        },
+        "compat": {
+            "pluginApi": ">=2026.4.9"
+        },
+        "build": {
+            "openclawVersion": "2026.4.9"
+        },
+        "bundle": {
+            "stageRuntimeDependencies": true
+        },
+        "release": {
+            "publishToNpm": true
+        }
+    }
+}

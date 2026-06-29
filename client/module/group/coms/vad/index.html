@@ -1,0 +1,9 @@
+<div
+	class="position-absolute end-0 d-flex align-items-center gap-2 p-1 pe-2 rounded-4 bg-white border shadow-sm"
+	style="bottom: calc(100% + 0.45rem); right: 0.5rem; z-index: 1060; max-width: min(18rem, calc(100% - 1rem))"
+	v-if="streamSource"
+>
+	<span class="badge rounded-pill" :class="badgeClass">{{badgeText}}</span>
+	<small class="text-muted font-monospace" v-if="status.speechProb !== null">{{speechPercent}}%</small>
+	<small class="text-muted text-truncate" style="min-width: 0" v-if="status.error">{{status.error}}</small>
+</div>

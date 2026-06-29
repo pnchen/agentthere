@@ -1,0 +1,8 @@
+{
+  "name": "agentthere",
+  "private": true,
+  "scripts": {
+    "dev": "cd client && npm run dev",
+    "build": "cd client && npm run build"
+  }
+}

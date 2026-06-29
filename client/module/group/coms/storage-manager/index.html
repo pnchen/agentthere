@@ -1,0 +1,63 @@
+<div class="modal fade" data-bs-backdrop="static" tabindex="0">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Storage</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<div class="mb-3 small fw-semibold text-muted">
+					<b>{{group}}</b>
+					<span class="ms-2 font-monospace">{{stat.roomCount}} msgs</span>
+				</div>
+
+				<div class="d-flex align-items-center gap-2 mt-3">
+					<span class="small text-nowrap">Delete older than</span>
+					<input type="number" class="form-control form-control-sm" style="width: 4.5rem" v-model.number="olderDays" min="1" />
+					<span class="small text-nowrap">days</span>
+					<button class="btn btn-outline-secondary btn-sm ms-auto" @click="doCleanup('olderThan')" :disabled="busy || !olderDays">
+						Delete
+					</button>
+				</div>
+
+				<div class="d-flex align-items-center gap-2 mt-3">
+					<span class="small text-nowrap">Keep recent</span>
+					<input type="number" class="form-control form-control-sm" style="width: 4.5rem" v-model.number="keepCount" min="1" />
+					<span class="small text-nowrap">messages</span>
+					<button class="btn btn-outline-secondary btn-sm ms-auto" @click="doCleanup('keepRecent')" :disabled="busy || !keepCount">
+						Keep
+					</button>
+				</div>
+
+				<button class="btn btn-outline-danger btn-sm w-100 mt-3" @click="doCleanup('clearGroup')" :disabled="busy">
+					Clear all messages
+				</button>
+
+				<hr />
+
+				<div class="small text-muted mb-2">Estimates are approximate</div>
+				<div v-if="stat.storageQuota" class="small text-muted mb-2">
+					Browser storage: {{formatBytes(stat.storageQuota.usage)}} / {{formatBytes(stat.storageQuota.quota)}}
+					({{stat.storageQuota.usagePercent}}%)
+					<div v-if="stat.storageQuota.usagePercent > 80" class="text-warning mt-1">⚠ Storage is nearly full</div>
+				</div>
+				<table class="table table-sm mb-3">
+					<tbody>
+						<tr class="align-middle">
+							<td>Orphan files</td>
+							<td class="text-end">{{stat.orphanStat.count}}</td>
+							<td class="text-end">
+								<div class="d-flex align-items-center justify-content-end gap-2">
+									{{formatBytes(stat.orphanStat.bytes)}}
+									<button class="btn btn-sm btn-outline-danger" @click="doCleanup('orphan')" :disabled="!stat.orphanStat.count">
+										Clean up
+									</button>
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,25 @@
+<span class="voice-bubble" :class="{playing: voice_playing}" @click="toggle" :title="(file && file.name) || 'voice'">
+	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="voice-icon" aria-hidden="true">
+		<path v-if="!voice_playing" d="M8 5v14l11-7z" fill="currentColor"/>
+		<g v-else fill="currentColor">
+			<rect x="6" y="5" width="4" height="14" rx="1"/>
+			<rect x="14" y="5" width="4" height="14" rx="1"/>
+		</g>
+	</svg>
+	<span class="voice-bars" aria-hidden="true">
+		<i></i><i></i><i></i><i></i><i></i>
+	</span>
+	<span class="voice-duration small text-muted" v-if="voice_duration">{{voice_duration}}</span>
+	<audio
+		ref="audio"
+		:src="src"
+		preload="metadata"
+		playsinline
+		:autoplay="autoplay"
+		@play="on_play"
+		@pause="on_pause"
+		@ended="on_ended"
+		@loadedmetadata="on_meta"
+		style="display:none"
+	></audio>
+</span>

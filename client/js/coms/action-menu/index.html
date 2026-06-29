@@ -1,0 +1,19 @@
+<div class="d-inline-block" v-if="hasContent">
+	<a
+		type="button"
+		class="btn btn-link dropdown-toggle text-decoration-none"
+		:class="toggle_btn_size"
+		data-bs-toggle="dropdown"
+		aria-haspopup="true"
+		aria-expanded="false"
+		><slot name="toggle">
+			<b class="fa fa-ellipsis-h"></b>
+		</slot>
+	</a>
+
+	<div class="dropdown-menu dropdown-menu-end">
+		<slot>
+			<a class="dropdown-item disabled" href="javascript:;">没有选项</a>
+		</slot>
+	</div>
+</div>

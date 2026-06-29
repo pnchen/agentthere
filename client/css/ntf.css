@@ -1,0 +1,111 @@
+.ntf {
+	.navbar .logo {
+		height: 2.2rem;
+		min-width: 2.2rem;
+		margin-right: 0.8rem;
+		vertical-align: top;
+	}
+
+	.navbar .site-name {
+		font-size: 1.3rem;
+		font-weight: 600;
+	}
+
+	.navbar {
+		z-index: 20;
+		right: 0;
+		/* height: 3.6rem; */
+		background-color: #fff;
+		box-sizing: border-box;
+		/* border-bottom: 1px solid #eaecef; */
+		box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.2);
+	}
+
+	.sidebar-mask {
+		position: fixed;
+		top: 0;
+		left: 0;
+		transition: background-color 1s;
+	}
+
+	.sidebar-mask {
+		z-index: 9;
+		width: 100vw;
+		height: 100vh;
+		display: none;
+	}
+
+	.sidebar {
+		transition: transform 0.2s ease;
+		width: 16rem;
+		z-index: 10;
+		top: 0;
+		bottom: 0;
+		position: fixed;
+		transform: translateX(-100%);
+	}
+}
+
+@media (min-width: 992px) {
+	.ntf .sidebar {
+		transform: none;
+	}
+	.ntf .main-content {
+		padding-left: 16rem;
+	}
+}
+
+.ntf.sidebar-open {
+	.sidebar-mask {
+		display: block;
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+	.sidebar {
+		transform: translateX(0) !important;
+	}
+}
+
+/* ── "New messages" floating pill ─────────────────────────────────────── */
+.new-messages-btn {
+	position: absolute;
+	top: -2.6rem;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 30;
+	display: inline-flex;
+	align-items: center;
+	padding: 0.35rem 1rem;
+	font-size: 0.82rem;
+	font-weight: 500;
+	color: #fff;
+	background: rgba(0, 0, 0, 0.7);
+	border-radius: 1rem;
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		opacity 0.2s,
+		transform 0.2s;
+}
+.new-messages-btn:hover {
+	color: #fff;
+	text-decoration: none;
+	opacity: 0.9;
+	transform: translateX(-50%) translateY(-2px);
+}
+
+/* Vue <transition name="fade"> */
+.fade-enter-active,
+.fade-leave-active {
+	transition:
+		opacity 0.25s ease,
+		transform 0.25s ease;
+}
+.fade-enter,
+.fade-leave-to {
+	opacity: 0;
+	transform: translateX(-50%) translateY(8px);
+}

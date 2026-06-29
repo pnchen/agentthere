@@ -1,0 +1,37 @@
+<div class="modal" tabindex="0">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
+		<div class="modal-content">
+			<div class="modal-header d-flex flex-column align-items-stretch gap-2">
+				<div class="d-flex align-items-center justify-content-between">
+					<h5 class="modal-title">History</h5>
+					<flat-pickr
+						ref="datepicker"
+						v-model="date_selected"
+						:config="{ dateFormat: 'Y-m-d', maxDate: 'today', allowInput: false, enable: days }"
+						class="form-control w-auto ms-2"
+						placeholder="Select a date"
+					></flat-pickr>
+					<div class="small text-muted ms-2" v-if="items.length>0">{{items.length}} messages</div>
+
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+			</div>
+			<div class="modal-body px-0" style="flex: 1; overflow-y: auto; min-height: 0">
+				<div v-if="!date_selected" class="text-center py-5 text-muted">Please select a date</div>
+
+				<div v-else-if="items.length === 0" class="text-center py-5 text-muted">No messages on this date</div>
+
+				<div v-else class="px-3">
+					<chat-message
+						class="mt-3 mb-5"
+						v-for="(message, index) in items"
+						:key="message.id || message._persisted_pk || index"
+						:target="message"
+						:prev="items[index - 1]"
+						:me="profile"
+					></chat-message>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

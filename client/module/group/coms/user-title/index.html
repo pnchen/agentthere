@@ -1,0 +1,5 @@
+<div class="d-inline-flex align-items-center">
+	<img v-if="profile.avatar" :src="profile.avatar" class="me-2" style="height: 1.5rem" />
+	<b>{{profile.name || '...'}}</b>
+	<span v-if="profile && profile.agent" class="badge text-bg-info ms-1" style="font-size: 0.7rem" title="AI Agent">AI</span>
+</div>

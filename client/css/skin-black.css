@@ -1,0 +1,521 @@
+/* ============================================================
+   Pure Black Skin — 纯黑皮肤
+   通过 html.skin-black 类名控制开关
+   ============================================================ */
+
+/* ── CSS 变量 & 根元素 ────────────────────────────────── */
+html.skin-black {
+	--bs-body-bg: #000;
+	--bs-body-color: #e0e0e0;
+	--bs-border-color: #2a2a2a;
+	--bs-heading-color: #f0f0f0;
+	--bs-link-color: #5b9bd5;
+	--bs-link-hover-color: #7eb8e8;
+	background-color: #000;
+}
+
+html.skin-black body {
+	background-color: #000 !important;
+	color: #d0d0d0;
+}
+
+/* ── 链接 ──────────────────────────────────────────────── */
+html.skin-black a {
+	color: #6aacf0;
+}
+html.skin-black a:hover {
+	color: #8ec5ff;
+}
+
+/* ── 背景色覆盖 ────────────────────────────────────────── */
+html.skin-black .bg-white {
+	background-color: #000 !important;
+}
+html.skin-black .bg-light {
+	background-color: #0d0d0d !important;
+}
+
+/* ── 文本色覆盖 ────────────────────────────────────────── */
+html.skin-black .text-dark {
+	color: #e0e0e0 !important;
+}
+html.skin-black .text-muted {
+	color: rgba(255, 255, 255, 0.35) !important;
+}
+html.skin-black .text-default {
+	color: rgba(255, 255, 255, 0.7);
+}
+html.skin-black .text-black,
+html.skin-black .text-body {
+	color: #e0e0e0 !important;
+}
+
+/* ── 边框覆盖 ──────────────────────────────────────────── */
+html.skin-black .border {
+	border-color: #2a2a2a !important;
+}
+html.skin-black .border-end {
+	border-color: #2a2a2a !important;
+}
+html.skin-black .border-bottom {
+	border-color: #2a2a2a !important;
+}
+
+/* ── Navbar / Header ───────────────────────────────────── */
+html.skin-black .ntf .navbar {
+	background-color: #000 !important;
+	box-shadow: 0 0 2px 0 rgba(255, 255, 255, 0.1);
+}
+
+html.skin-black .chat-input-shell {
+	box-shadow:
+		0 12px 28px rgba(0, 0, 0, 0.42),
+		0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* header 内联渐变覆盖（!important 可覆盖内联 style） */
+html.skin-black .main-header {
+	background: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0)) !important;
+}
+
+/* ── Sidebar ───────────────────────────────────────────── */
+html.skin-black .ntf .sidebar {
+	background-color: #000 !important;
+}
+html.skin-black .bd-sidebar {
+	background-color: #000 !important;
+}
+
+/* ── Card ──────────────────────────────────────────────── */
+html.skin-black .card {
+	background-color: #0a0a0a !important;
+	border-color: #1f1f1f !important;
+}
+html.skin-black .card-header {
+	background-color: #0f0f0f !important;
+	border-bottom-color: #1f1f1f !important;
+}
+html.skin-black .card-footer {
+	background-color: #0f0f0f !important;
+	border-top-color: #1f1f1f !important;
+}
+html.skin-black .card-body {
+	background-color: #0a0a0a !important;
+}
+
+/* ── Alert ─────────────────────────────────────────────── */
+html.skin-black .alert-light {
+	background-color: #0d0d0d !important;
+	color: #c0c0c0 !important;
+	border-color: #1f1f1f !important;
+}
+html.skin-black .alert-secondary {
+	background-color: #0d0d0d !important;
+	color: #c0c0c0 !important;
+	border-color: #1f1f1f !important;
+}
+
+/* ── Table ─────────────────────────────────────────────── */
+html.skin-black tr:nth-child(odd) {
+	background-color: #0a0a0a !important;
+}
+html.skin-black tr:nth-child(even) {
+	background-color: #050505 !important;
+}
+html.skin-black th {
+	background-color: #111 !important;
+	color: #d0d0d0;
+}
+
+/* ── Form Controls ─────────────────────────────────────── */
+html.skin-black .form-control {
+	border-color: #2a2a2a !important;
+	color: #e0e0e0 !important;
+}
+html.skin-black .form-control:focus {
+	color: #f0f0f0 !important;
+	border-color: #2a2a2a !important;
+	box-shadow: none !important;
+	outline: none !important;
+}
+html.skin-black .form-control::placeholder {
+	color: #666 !important;
+}
+html.skin-black .form-control:disabled,
+html.skin-black .form-control[readonly] {
+	background-color: #050505 !important;
+	color: #777 !important;
+}
+
+html.skin-black select.form-control,
+html.skin-black .form-select {
+	background-color: #0a0a0a !important;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4.95 10'%3E%3Cpolygon fill='%23888' points='1.41 4.67 2.48 3.18 3.54 4.67 1.41 4.67'/%3E%3Cpolygon fill='%23888' points='3.54 5.33 2.48 6.82 1.41 5.33 3.54 5.33'/%3E%3C/svg%3E") !important;
+}
+
+html.skin-black .form-group label,
+html.skin-black .form-group .checkbox label,
+html.skin-black .form-group .radio label {
+	color: rgba(255, 255, 255, 0.5) !important;
+}
+
+html.skin-black .input-group-text {
+	background-color: #0f0f0f !important;
+	border-color: #2a2a2a !important;
+	color: #c0c0c0 !important;
+}
+
+html.skin-black .input-group > .btn-outline-secondary,
+html.skin-black .input-group > div > .btn-outline-secondary {
+	border-color: #2a2a2a !important;
+	color: #b0b0b0;
+}
+html.skin-black .input-group > .btn-outline-secondary:hover,
+html.skin-black .input-group > div > .btn-outline-secondary:hover {
+	color: #d0d0d0;
+	border-color: #444;
+	background-color: #111;
+}
+
+/* ── Buttons ───────────────────────────────────────────── */
+html.skin-black .btn-primary {
+	background-color: #1a3a5c !important;
+	border-color: #2a4a6c !important;
+	color: #e0e0e0 !important;
+}
+html.skin-black .btn-primary:hover {
+	background-color: #224466 !important;
+}
+
+html.skin-black .btn-secondary {
+	background-color: #1a1a1a !important;
+	border-color: #333 !important;
+	color: #d0d0d0 !important;
+}
+html.skin-black .btn-secondary:hover {
+	background-color: #252525 !important;
+	border-color: #444 !important;
+}
+
+html.skin-black .btn-link {
+	color: #6aacf0 !important;
+}
+html.skin-black .btn-link:hover {
+	color: #8ec5ff !important;
+}
+
+html.skin-black .btn-outline-secondary {
+	color: #b0b0b0 !important;
+	border-color: #333 !important;
+}
+html.skin-black .btn-outline-secondary:hover {
+	background-color: #1a1a1a !important;
+	color: #e0e0e0 !important;
+}
+
+html.skin-black .btn-close {
+	filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ── Dropdown ──────────────────────────────────────────── */
+html.skin-black .dropdown-menu {
+	background-color: #111 !important;
+	border-color: #2a2a2a !important;
+}
+html.skin-black .dropdown-item {
+	color: #d0d0d0 !important;
+}
+html.skin-black .dropdown-item:hover,
+html.skin-black .dropdown-item:focus {
+	background-color: #1f1f1f !important;
+	color: #f0f0f0 !important;
+}
+html.skin-black .dropdown-divider {
+	border-top-color: #2a2a2a !important;
+}
+
+/* ── List Group ────────────────────────────────────────── */
+html.skin-black .list-group-item {
+	background-color: #0a0a0a !important;
+	border-color: #1f1f1f !important;
+	color: #d0d0d0 !important;
+}
+html.skin-black .list-group-item:hover {
+	background-color: #141414 !important;
+}
+html.skin-black .list-group-item.active {
+	background-color: #1a3a5c !important;
+	border-color: #2a4a6c !important;
+}
+html.skin-black .list-group-item-action {
+	color: #c0c0c0 !important;
+}
+html.skin-black .list-group-item-action:hover {
+	background-color: #141414 !important;
+}
+
+/* ── Nav Tabs ──────────────────────────────────────────── */
+html.skin-black .nav-tabs {
+	border-bottom-color: #2a2a2a !important;
+}
+html.skin-black .nav-tabs .nav-link {
+	color: #888 !important;
+}
+html.skin-black .nav-tabs .nav-link:hover {
+	color: #bbb !important;
+	border-color: transparent !important;
+}
+html.skin-black .nav-tabs .nav-link.active {
+	color: #e0e0e0 !important;
+	background-color: #0d0d0d !important;
+	border-color: #2a2a2a #2a2a2a #0d0d0d !important;
+}
+
+/* ── Modal ─────────────────────────────────────────────── */
+html.skin-black .modal-content {
+	background-color: #0d0d0d !important;
+	border-color: #2a2a2a !important;
+}
+html.skin-black .modal-header {
+	background-color: #0d0d0d !important;
+	border-bottom-color: #1f1f1f !important;
+}
+html.skin-black .modal-footer {
+	background-color: #0d0d0d !important;
+	border-top-color: #1f1f1f !important;
+}
+
+/* ── Pagination ────────────────────────────────────────── */
+html.skin-black .page-link {
+	background-color: #0a0a0a !important;
+	border-color: #2a2a2a !important;
+	color: #b0b0b0 !important;
+}
+html.skin-black .page-link:hover {
+	background-color: #1a1a1a !important;
+	color: #e0e0e0 !important;
+}
+html.skin-black .page-item.active .page-link {
+	background-color: #1a3a5c !important;
+	border-color: #2a4a6c !important;
+}
+html.skin-black .page-item.disabled .page-link {
+	background-color: #050505 !important;
+	color: #555 !important;
+}
+
+/* ── Code ──────────────────────────────────────────────── */
+html.skin-black code {
+	color: #78c0d8;
+	background-color: #1a1a1a;
+}
+
+html.skin-black .hljs {
+	background: #0a0a0a !important;
+	color: #d0d0d0 !important;
+}
+
+html.skin-black pre {
+	background-color: #0a0a0a !important;
+	border-color: #1f1f1f !important;
+	color: #d0d0d0;
+}
+
+/* ── Badge ─────────────────────────────────────────────── */
+html.skin-black .text-bg-secondary {
+	background-color: #252525 !important;
+	color: #c0c0c0 !important;
+}
+html.skin-black .text-bg-info {
+	background-color: #1a3a4a !important;
+	color: #8ed0e8 !important;
+}
+
+/* ── Progress / NProgress ──────────────────────────────── */
+html.skin-black #nprogress .bar {
+	background: #5b9bd5 !important;
+}
+html.skin-black #nprogress .peg {
+	box-shadow:
+		0 0 10px #5b9bd5,
+		0 0 5px #5b9bd5 !important;
+}
+
+/* ── Toastr ────────────────────────────────────────────── */
+html.skin-black .toast {
+	background-color: #111 !important;
+	border-color: #2a2a2a !important;
+}
+html.skin-black .toast-header {
+	background-color: #0f0f0f !important;
+	color: #d0d0d0;
+	border-bottom-color: #2a2a2a;
+}
+
+/* ── HR / Divider ──────────────────────────────────────── */
+html.skin-black hr {
+	border-top-color: #2a2a2a !important;
+}
+
+/* ── 选中文本 ──────────────────────────────────────────── */
+html.skin-black ::selection {
+	background-color: #2a4a6c;
+	color: #e0e0e0;
+}
+
+/* ── 远程音频按钮 ──────────────────────────────────────── */
+html.skin-black .remote-audio-gate {
+	color: #d0d0d0;
+	background: rgba(30, 30, 30, 0.88);
+	border-color: rgba(255, 255, 255, 0.12);
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+html.skin-black .remote-audio-gate:hover {
+	background: #1f1f1f;
+	border-color: rgba(255, 255, 255, 0.22);
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+html.skin-black .remote-audio-gate:focus-visible {
+	outline-color: rgba(100, 160, 240, 0.5);
+}
+html.skin-black .remote-audio-gate.is-muted {
+	color: #000;
+	background: #e0e0e0;
+	border-color: #e0e0e0;
+}
+
+/* ── 消息气泡 ──────────────────────────────────────────── */
+html.skin-black .chat-message--self .chat-message__bubble {
+	background-color: #1a3a5c;
+	color: #e0e0e0;
+}
+html.skin-black .chat-message--other .chat-message__bubble {
+	background-color: #1a1a1a;
+	color: #d0d0d0;
+}
+
+/* ── Blockquote (消息引用) ─────────────────────────────── */
+html.skin-black .message-text blockquote,
+html.skin-black .reasoning-text blockquote {
+	color: #a0aab4 !important;
+	border-left-color: #374151 !important;
+	background: #0f0f0f !important;
+}
+
+/* ── Tool segment (工具调用，与引用风格一致) ────────── */
+html.skin-black .tool-segment {
+	color: #a0aab4 !important;
+	border-left-color: #374151 !important;
+	background: #0f0f0f !important;
+}
+html.skin-black .tool-segment > .tool-summary::before {
+	background: #4b5563;
+}
+html.skin-black .tool-segment.is-running > .tool-summary::before {
+	background: #f0ad4e;
+}
+html.skin-black .tool-segment.is-complete > .tool-summary::before {
+	background: #9ca3af;
+}
+html.skin-black .tool-segment.is-error > .tool-summary::before {
+	background: #d9534f;
+}
+html.skin-black .tool-segment .tool-detail {
+	color: #9ca3af;
+	background: transparent;
+}
+
+/* ── 杂项 ──────────────────────────────────────────────── */
+html.skin-black .shadow-sm {
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+html.skin-black .shadow {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.skin-black .bd-content {
+	background-color: #000 !important;
+}
+
+html.skin-black .select-x.selected input.form-control::placeholder {
+	color: #aaa;
+}
+
+html.skin-black .pagination select.form-control {
+	border-color: #2a2a2a !important;
+}
+
+html.skin-black .nav-links .router-link-active,
+html.skin-black .home-link.router-link-active {
+	color: #e0e0e0 !important;
+}
+
+html.skin-black .chat-history {
+	background-color: transparent !important;
+}
+
+/* ── Flatpickr 日历 ────────────────────────────────────── */
+html.skin-black .flatpickr-calendar {
+	background: #111 !important;
+	border-color: #2a2a2a !important;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7) !important;
+}
+html.skin-black .flatpickr-day {
+	color: #d0d0d0 !important;
+}
+html.skin-black .flatpickr-day:hover {
+	background: #1f1f1f !important;
+}
+html.skin-black .flatpickr-day.today {
+	border-color: #5b9bd5 !important;
+}
+html.skin-black .flatpickr-day.selected {
+	background: #1a3a5c !important;
+	border-color: #2a4a6c !important;
+}
+html.skin-black .flatpickr-months .flatpickr-month,
+html.skin-black .flatpickr-current-month .flatpickr-monthDropdown-months,
+html.skin-black span.flatpickr-weekday {
+	color: #d0d0d0 !important;
+	background: #111 !important;
+}
+html.skin-black .flatpickr-prev-month,
+html.skin-black .flatpickr-next-month {
+	fill: #d0d0d0 !important;
+}
+html.skin-black .flatpickr-prev-month:hover svg,
+html.skin-black .flatpickr-next-month:hover svg {
+	fill: #f0f0f0 !important;
+}
+
+/* ── Modern Icon Button (dark mode) ── */
+html.skin-black .btn-icon {
+	color: #888;
+}
+html.skin-black .btn-icon:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: #bbb;
+}
+html.skin-black .btn-icon:focus-visible {
+	box-shadow: 0 0 0 3px rgba(90, 160, 240, 0.4);
+}
+html.skin-black .btn-icon.is-active {
+	background: rgba(90, 160, 240, 0.15);
+	color: #6aacf0;
+}
+html.skin-black .btn-icon.is-active:hover {
+	background: rgba(90, 160, 240, 0.22);
+}
+
+html.skin-black .btn-icon-drop {
+	color: #888;
+}
+html.skin-black .btn-icon-drop:hover {
+	color: #bbb;
+}
+html.skin-black .btn-icon-drop:focus-visible {
+	box-shadow: 0 0 0 3px rgba(90, 160, 240, 0.4);
+}
+html.skin-black .btn-icon-drop.is-active {
+	color: #6aacf0;
+}
