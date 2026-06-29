@@ -214,7 +214,6 @@ class VADAudioTrackHandle {
     async _processVadFrames(msg, pcm48) {
         const vadState = await this._getVadState();
         const frames = vadState.resampler.process(pcm16ToFloat32(pcm48));
-        let shouldClose = false;
         let openedThisTurn = false;
 
         for (const frame of frames) {
@@ -230,20 +229,15 @@ class VADAudioTrackHandle {
                     }
                 }
             }
-            if (
-                result?.msg === vadState.Message.SpeechEnd ||
-                result?.msg === vadState.Message.VADMisfire ||
-                result?.msg === vadState.Message.SpeechStop
-            ) {
-                shouldClose = true;
-            }
+            // SpeechEnd / VADMisfire / SpeechStop are no longer used to
+            // close the gate. Once the gate opens, it stays open so that
+            // trailing silence reaches the STT service for proper
+            // sentence finalization (like client-side VAD does with a
+            // gain node that outputs zeros when gate is "closed").
         }
 
         if (this._rtcVadGateOpen && !openedThisTurn) {
             this._enqueue(msg);
-        }
-        if (shouldClose) {
-            this._closeGate('segment-end');
         }
     }
 
