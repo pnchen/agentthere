@@ -82,7 +82,7 @@ export default {
 	},
 	methods: {
 		clear_listen() {
-			// 清理所有流
+			// Clean up all streams
 			if (this.stream_user) {
 				this.stream_user.getTracks().forEach(track => track.stop());
 				this.stream_user = null;

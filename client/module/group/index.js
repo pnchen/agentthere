@@ -22,11 +22,11 @@ import inputVoice from 'js/coms/input-voice/index.js';
 import vad from './coms/vad/index.js';
 import systemSettings from 'js/coms/system-settings/index.js';
 
-// 初始化皮肤
+// Initialize skin
 if (settings.theme === 'dark') {
 	document.documentElement.classList.add('skin-black');
 }
-// 监听皮肤切换
+// Watch skin toggle
 import { watch } from 'vue';
 watch(
 	() => settings.theme,
@@ -55,7 +55,7 @@ export default {
 		'system-settings': systemSettings
 	},
 	data() {
-		this.$root.selected = '首页';
+		this.$root.selected = 'Home';
 
 		return {
 			params: {
@@ -92,7 +92,7 @@ export default {
 		if (this.$route.query.ns) {
 			settings.signaling.namespace = this.$route.query.ns;
 		}
-		// 初始化 MQTT 连接（带 will）
+		// Initialize MQTT connection (with will)
 		const connect = async () => {
 			const hGroup = await this.hashId(this.group);
 			const hPeer = await this.hashId(this.peer_id);
@@ -110,7 +110,7 @@ export default {
 		};
 		connect();
 
-		// settings 变更重新连接（跳过首次）
+		// Reconnect on settings change (skip first)
 		var _settingsReady = false;
 		this.$watch(
 			() => settings.signaling,
@@ -124,13 +124,13 @@ export default {
 			{ deep: true }
 		);
 
-		// 切换 group 时清空成员并重建 client
+		// Clear members and rebuild client when switching group
 		this.$watch('group', () => {
 			this.items_member = [];
 			connect();
 		});
 
-		// @ mention 检测
+		// @ mention detection
 		this.$watch('params.text', () => {
 			this.$nextTick(() => {
 				this.check_mention();
@@ -161,10 +161,10 @@ export default {
 		},
 		control_commands() {
 			return [
-				{ name: '/stop', desc: '停止当前任务', icon: 'la-stop-circle', variant: 'danger' },
-				{ name: '/new', desc: '开启新会话', icon: 'la-plus-circle', variant: 'primary' },
-				{ name: '/help', desc: '查看可用命令', icon: 'la-question-circle', variant: 'muted' },
-				{ name: '/status', desc: '查看会话状态', icon: 'la-info-circle', variant: 'muted' }
+				{ name: '/stop', desc: 'Stop current task', icon: 'la-stop-circle', variant: 'danger' },
+				{ name: '/new', desc: 'Start new session', icon: 'la-plus-circle', variant: 'primary' },
+				{ name: '/help', desc: 'View available commands', icon: 'la-question-circle', variant: 'muted' },
+				{ name: '/status', desc: 'View session status', icon: 'la-info-circle', variant: 'muted' }
 			];
 		},
 		control_commands_filtered() {

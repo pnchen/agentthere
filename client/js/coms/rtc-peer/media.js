@@ -171,7 +171,7 @@ export default {
 			if (play) {
 				return play.catch(err => {
 					console.error(err);
-					this.interact_error_tip = '请点击播放按钮';
+					this.interact_error_tip = 'Please click the play button';
 				});
 			}
 		},

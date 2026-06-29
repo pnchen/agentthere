@@ -30,7 +30,7 @@ export default {
 	},
 	beforeUnmount() {
 		this.release_all_object_urls();
-		// 关闭 IndexedDB 连接
+		// Close IndexedDB connection
 		if (this._message_db) {
 			try {
 				this._message_db.close();
@@ -121,7 +121,7 @@ export default {
 				// behaviors that should only run for freshly-arrived messages.
 				history: true
 			};
-			// 超过 1 小时的历史消息不可能还在 loading，强制清除残留状态
+			// History older than 1 hour cannot still be loading, force clear stale state
 			if (msg.loading && moment().diff(moment(record.createdAt), 'hours') >= 1) {
 				msg.loading = false;
 				msg.status = null;

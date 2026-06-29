@@ -82,7 +82,7 @@ export default {
 		}
 	},
 	watch: {
-		// Vue 3: v-model 绑定 modelValue
+		// Vue 3: v-model binds to modelValue
 		modelValue(val) {
 			if (val !== this.val) this.val = val;
 		},
@@ -198,7 +198,7 @@ export default {
 			}
 		},
 		on_up(event) {
-			// 仅当光标位于文本最前端（且无选区）时，才向上切换历史
+			// Only switch history up when cursor is at the very start (and no selection)
 			var el = this.$el;
 			if (!el) return;
 			if (el.selectionStart !== 0 || el.selectionEnd !== 0) {
@@ -208,7 +208,7 @@ export default {
 			this.$emit('up');
 		},
 		on_down(event) {
-			// 仅当光标位于文本末尾（且无选区）时，才向下切换历史
+			// Only switch history down when cursor is at the very end (and no selection)
 			var el = this.$el;
 			if (!el) return;
 			var end = (el.value || '').length;
@@ -236,13 +236,13 @@ export default {
 			}
 
 			this.$el.setRangeText(text, this.$el.selectionStart, this.$el.selectionEnd);
-			// 同步更新内部响应式 val — val watcher 会统一 emit 'input' 通知父组件
-			// 避免直接 $emit 与 val watcher 双重 emit 竞争
+			// Sync internal reactive val — val watcher will emit "input" to parent
+			// Avoid race between direct $emit and val watcher
 			this.val = this.$el.value;
 
 			this.$el.focus();
 
-			// Vue 可能在下一 tick 对 textarea 做 patch，在 patch 后再设置光标更可靠
+			// Vue may patch textarea in the next tick; setting cursor after patch is more reliable
 			this.$nextTick(() => {
 				this.$el.setSelectionRange(cur, cur);
 			});
@@ -250,8 +250,8 @@ export default {
 		insert_code_block() {
 			var text = this.$el.value || '';
 			var start = this.$el.selectionStart;
-			// 统计光标前有多少个独占一行的 ``` 围栏
-			// 奇数 = 光标已在代码块内，直接聚焦即可
+			// Count how many standalone triple-backtick fences exist before the cursor
+			// Odd = cursor is inside a code block, just focus
 			var before = text.substring(0, start);
 			var fenceCount = (before.match(/^```/gm) || []).length;
 			if (fenceCount % 2 === 1) {

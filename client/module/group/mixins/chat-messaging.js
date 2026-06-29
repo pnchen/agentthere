@@ -218,7 +218,7 @@ export default {
 					target[key] = message[key];
 				}
 
-				// 终态直接写入，避免 300ms 防抖窗口内刷新丢失最终状态
+				// Write final state directly to avoid losing it during 300ms debounce window
 				if (message.loading === false) {
 					this.upsert_message_to_store(target);
 				} else {
@@ -240,7 +240,7 @@ export default {
 
 			var chat_message = _.findWhere(this.messages, { object_id: message.object_id });
 			if (!chat_message) {
-				throw new Error('主消息不存在');
+				throw new Error('Main message not found');
 			}
 			if (!this.all_chunks[message.object_id]) {
 				this.all_chunks[message.object_id] = [];
@@ -287,7 +287,7 @@ export default {
 		send_file(file) {
 			return Promise.resolve().then(() => {
 				if (file.size === 0) {
-					throw new Error('空文件');
+					throw new Error('Empty file');
 				}
 				var object_id = nanoid_tree_safe();
 				this.send_message(
@@ -369,7 +369,7 @@ export default {
 					if (message.from.name == this.profile.name) {
 						return;
 					}
-					// 超过2人时，只有 @我 的消息才发通知
+					// When more than 2 people, only notify for @me messages
 					if (this.items_member.length > 1 && message.text) {
 						var my_name = this.profile.name;
 						if (!message.text.includes(`@${my_name}`)) {
@@ -385,7 +385,7 @@ export default {
 								window.focus();
 							};
 						} else {
-							alert('无通知权限');
+							alert('No notification permission');
 						}
 					});
 				});

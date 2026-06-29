@@ -15,7 +15,7 @@ body {
 	background-color: #fafafa;
 }
 
-/* input-group 按钮 border 统一跟随输入框 */
+/* input-group button border follows input box */
 .input-group > .btn {
 	border-color: var(--bs-border-color);
 }

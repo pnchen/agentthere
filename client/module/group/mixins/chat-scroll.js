@@ -26,15 +26,15 @@ export default {
 		this._scrollRafId = null;
 		this._touchStartY = 0;
 		this._lastProgrammaticScrollAt = 0;
-		// 程序发起 smooth scroll 后的保护窗口（ms）
-		// 在此窗口内忽略 wheel/touch-up 产生的 disengage，避免惯性事件误触发
+		// Protection window after programmatic smooth scroll (ms)
+		// Ignore wheel/touch-up disengage within this window to avoid false triggers
 		var PROGRAMMATIC_SCROLL_GUARD = 700;
 
 		// wheel: deltaY < 0 = scroll up → disengage
 		//         deltaY > 0 = scroll down → re-engage if near bottom
 		this._onWheel = e => {
 			if (e.deltaY < 0) {
-				// 程序滚动保护窗口内，忽略 wheel-up（可能是 smooth 动画或 trackpad 惯性）
+				// During scroll protection window, ignore wheel-up (may be smooth animation or inertia)
 				if (Date.now() - this._lastProgrammaticScrollAt < PROGRAMMATIC_SCROLL_GUARD) return;
 				this._userNearBottom = false;
 			} else if (e.deltaY > 0) {
@@ -59,7 +59,7 @@ export default {
 				var delta = e.touches[0].clientY - this._touchStartY;
 				if (delta > 10) {
 					// finger moved down = page scrolls up → disengage
-					// 保护窗口内忽略（避免程序滚动完成前的惯性触摸事件）
+					// Ignore during protection window (avoid inertial touch events before scroll completes)
 					if (Date.now() - this._lastProgrammaticScrollAt < PROGRAMMATIC_SCROLL_GUARD) return;
 					this._userNearBottom = false;
 				} else if (delta < -10) {

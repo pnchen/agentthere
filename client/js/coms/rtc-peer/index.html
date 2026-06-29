@@ -15,8 +15,8 @@
 			class="remote-audio-gate"
 			:class="{'is-muted':remote_audio_muted}"
 			@click="toggle_remote_audio_muted"
-			:title="remote_audio_muted?'打开远端声音':'静音远端声音'"
-			:aria-label="remote_audio_muted?'打开远端声音':'静音远端声音'"
+			:title="remote_audio_muted ? 'Unmute remote audio' : 'Mute remote audio'"
+			:aria-label="remote_audio_muted ? 'Unmute remote audio' : 'Mute remote audio'"
 		>
 			<i class="fa" :class="{'fa-volume-up':!remote_audio_muted,'fa-volume-mute':remote_audio_muted}"></i>
 		</button>

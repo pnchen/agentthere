@@ -58,7 +58,7 @@
 			</div>
 			<div class="agent-reasoning" v-if="target.reasoning">
 				<details :open="!target.reasoning_complete">
-					<summary class="small text-muted">思考过程<span v-if="!target.reasoning_complete" class="reasoning-dots">…</span></summary>
+					<summary class="small text-muted">Reasoning<span v-if="!target.reasoning_complete" class="reasoning-dots">…</span></summary>
 					<div class="reasoning-text small text-muted mt-1" v-html="marked(target.reasoning)"></div>
 				</details>
 			</div>
@@ -108,10 +108,10 @@
 					class="btn btn-link btn-sm p-0 text-muted"
 					v-if="(target.text || (target.segments && target.segments.length)) && !target.loading"
 					@click="copy_text"
-					:title="copied ? '已复制' : '复制'"
+					:title="copied ? 'Copied' : 'Copy'"
 				>
 					<i class="fas" :class="copied ? 'fa-check' : 'fa-copy'"></i>
-					<span class="ms-1" v-if="copied">已复制</span>
+					<span class="ms-1" v-if="copied">Copied</span>
 				</button>
 				<small>
 					<b class="me-1" v-if="target.model_info">{{target.model_info.model}}</b>

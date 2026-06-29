@@ -9,12 +9,12 @@
 			></video-stream-preview>
 
 			<div class="flex-grow-1 d-flex align-items-center flex-wrap gap-2">
-				<a title="发送文件" href="javascript:;" class="btn-icon" @click="select_file()"><i class="fa fa-folder"></i></a>
+				<a title="Send file" href="javascript:;" class="btn-icon" @click="select_file()"><i class="fa fa-folder"></i></a>
 				<input ref="input-file" type="file" class="d-none" @change="on_select_file($event)" />
 
 				<!-- <div class="btn-group">
 					<a
-						title="打开摄像头"
+						title="Turn on camera"
 						href="javascript:;"
 						class="btn-icon"
 						:class="{'is-active': constraints.video}"
@@ -34,7 +34,7 @@
 						<div class="dropdown-menu">
 							<template v-for="d in devices_videoinput">
 								<a v-if="constraints.video == d" class="dropdown-item" href="javascript:;" @click="constraints.video=null"
-									>{{d.label}} <small class="text-success">使用中</small></a
+									>{{d.label}} <small class="text-success">Active</small></a
 								>
 								<a v-else class="dropdown-item" href="javascript:;" @click="constraints.video=d">{{d.label}}</a>
 							</template>
@@ -44,7 +44,7 @@
 
 				<!-- <div class="btn-group">
 					<a
-						title="打开麦克风"
+						title="Turn on microphone"
 						href="javascript:;"
 						class="btn-icon"
 						:class="{'is-active': constraints.audio}"
@@ -64,7 +64,7 @@
 						<div class="dropdown-menu">
 							<template v-for="d in devices_audioinput">
 								<a v-if="constraints.audio == d" class="dropdown-item" href="javascript:;" @click="constraints.audio=null"
-									>{{d.label}} <small class="text-success">使用中</small></a
+									>{{d.label}} <small class="text-success">Active</small></a
 								>
 								<a v-else class="dropdown-item" href="javascript:;" @click="constraints.audio=d">{{d.label}}</a>
 							</template>
@@ -72,7 +72,7 @@
 					</template>
 				</div> -->
 				<!-- <a
-					title="共享屏幕"
+					title="Share screen"
 					href="javascript:;"
 					class="btn-icon"
 					:class="{'is-active': constraints.display}"
@@ -81,7 +81,7 @@
 					<i class="fa fa-laptop"></i>
 				</a> -->
 
-				<a title="发送代码" href="javascript:;" class="btn-icon" @click="$emit('input-code')"><i class="fa fa-code"></i></a>
+				<a title="Send code" href="javascript:;" class="btn-icon" @click="$emit('input-code')"><i class="fa fa-code"></i></a>
 			</div>
 		</div>
 	</div>

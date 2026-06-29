@@ -91,7 +91,7 @@ export default {
 		}
 	},
 	mounted() {
-		// 打开独立的 IndexedDB 连接
+		// Open a separate IndexedDB connection
 		if (messageStore.supportsIndexedDb()) {
 			messageStore
 				.openDb()
@@ -118,7 +118,7 @@ export default {
 				}
 			}
 		});
-		// 关闭并销毁 IndexedDB 连接
+		// Close and destroy the IndexedDB connection
 		if (this.db) {
 			try {
 				this.db.close();

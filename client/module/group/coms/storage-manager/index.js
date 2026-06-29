@@ -124,7 +124,7 @@ export default {
 				.then(() => doIt())
 				.then(count => {
 					toastr.success(`${label}: ${count || 0} deleted`);
-					// 通知父组件刷新消息列表
+					// Notify parent to refresh message list
 					if (action !== 'orphan') {
 						this.$emit('cleaned', { action: 'messages_cleaned' });
 					}

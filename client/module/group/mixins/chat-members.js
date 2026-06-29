@@ -49,7 +49,7 @@ export default {
 
 		document.addEventListener('visibilitychange', () => {
 			if (document.visibilityState === 'visible') {
-				// 该标签页已对用户可见，因此可以清除现已过时的通知。
+				// The tab is now visible, stale notifications can be cleared.
 			}
 		});
 	},
@@ -81,17 +81,17 @@ export default {
 		},
 
 		/**
-		 * 连接状态变化处理。
+		 * Handle connection state changes.
 		 *
-		 * 不再主动移除 member —— member 生命周期完全由信令控制：
-		 *   - 主动离开: 对方 beforeUnmount 发送 BYE → 即时移除
-		 *   - 异常断开: MQTT keepalive 到期 → broker 发布 will → 最多 ~180s 移除
+		 * No longer proactively remove members — lifecycle is fully controlled by signaling:
+		 *   - Graceful leave: peer sends BYE on beforeUnmount → immediate removal
+		 *   - Unexpected disconnect: MQTT keepalive expires → broker publishes will → up to ~180s removal
 		 *
-		 * 短暂断连（MQTT 瞬断等）由 rtc-peer 内部自动重试 init_pc()，
-		 * 不会触发 BYE/will，member 应留在列表中等待恢复。
+		 * Brief disconnections are handled by rtc-peer auto retry init_pc(),
+		 * will not trigger BYE/will, members should stay in the list awaiting recovery.
 		 */
 		on_connection_state_changed(item_member, state) {
-			// 仅追踪状态，不自动移除 member
+			// Only track state, do not auto-remove members
 			if (item_member) {
 				item_member.connectionState = state;
 			}

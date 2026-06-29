@@ -40,8 +40,8 @@ export default {
 	},
 	data() {
 		return {
-			// 'off'    — 未启动
-			// 'active' — 正在发送音频，track.enabled = true
+			// // 'off'    — not started
+			// // 'active' — sending audio, track.enabled = true
 			state: 'off',
 			stream: null,
 			error: null,

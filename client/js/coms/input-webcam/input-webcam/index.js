@@ -8,7 +8,7 @@ export default {
 			context: null,
 			img: null,
 			camera_render_interval: null,
-			fps: 30 // 帧率
+			fps: 30 // Frame rate
 		};
 	},
 	props: ['url'],
@@ -27,13 +27,13 @@ export default {
 	created() {},
 	mounted() {
 		this.context = this.$el.getContext('2d');
-		// 获取canvas的MediaStream
+		// Get the canvas MediaStream
 
-		// 创建img元素来加载MJPEG流
+		// Create an img element to load the MJPEG stream
 		this.img = new Image();
 		this.img.crossOrigin = 'anonymous';
 
-		// 设置canvas尺寸
+		// Set canvas dimensions
 
 		this.img.onload = () => {
 			console.log('Camera image loaded successfully');
@@ -49,12 +49,12 @@ export default {
 			console.error('Camera image load error:', error);
 		};
 
-		// 加载MJPEG流 - 由于是MJPEG，img会自动更新
+		// Load MJPEG stream — img auto-updates since it is MJPEG
 		this.img.src = this.url;
 	},
 	methods: {
 		clear_camera_media() {
-			// 清理camera相关资源
+			// Clean up camera resources
 		},
 
 		start_camera_render() {

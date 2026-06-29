@@ -31,7 +31,7 @@ export default {
 			var m = moment(d);
 			var now = moment();
 			if (m.isSame(now, 'day')) return m.format('HH:mm');
-			if (m.isSame(now.clone().subtract(1, 'day'), 'day')) return '昨天 ' + m.format('HH:mm');
+			if (m.isSame(now.clone().subtract(1, 'day'), 'day')) return 'Yesterday ' + m.format('HH:mm');
 			if (m.isSame(now, 'year')) return m.format('MM-DD HH:mm');
 			return m.format('YYYY-MM-DD HH:mm');
 		},
@@ -47,10 +47,10 @@ export default {
 		}
 	},
 	created() {
-		// 每个组件实例独立的防抖，避免 streaming 期间行号反复跳动
+		// Per-instance debounce to prevent line numbers from jumping during streaming
 		this._applyLineNumbers = _.debounce(() => {
 			if (!window.hljs) return;
-			// 先对尚未高亮的块补跑高亮（hljs 动态加载前已渲染的情况）
+			// First apply highlighting to blocks rendered before hljs loaded
 			var allBlocks = this.$el.querySelectorAll('pre code');
 			allBlocks.forEach(block => {
 				if (!block.classList.contains('hljs') && window.hljs.highlightElement) {
@@ -60,20 +60,20 @@ export default {
 			if (!window.hljs.lineNumbersBlock) return;
 			var blocks = this.$el.querySelectorAll('pre code.hljs');
 			blocks.forEach(block => {
-				// 已处理过的跳过（hljs-line-numbers 会在内部生成 .hljs-ln table）
+				// Skip already processed blocks (hljs-line-numbers generates .hljs-ln table internally)
 				if (block.querySelector('.hljs-ln')) return;
 				window.hljs.lineNumbersBlock(block);
 			});
 		}, 400);
 	},
 	watch: {
-		// streaming 结束时应用行号
+		// Apply line numbers when streaming ends
 		'target.loading'(val) {
 			if (val === false) {
 				this.$nextTick(() => this._applyLineNumbers());
 			}
 		},
-		// 非 streaming 状态下 text 变化（如编辑）也补应用
+		// Also apply on text change when not streaming (e.g. editing)
 		'target.text'() {
 			if (!this.target.loading) {
 				this.$nextTick(() => this._applyLineNumbers());
@@ -85,7 +85,7 @@ export default {
 		for (var i = 0; i < anchors.length; i++) {
 			anchors[i].setAttribute('target', '_blank');
 		}
-		// 已完成的消息（历史记录加载）直接应用行号
+		// Apply line numbers for completed messages (history loaded)
 		if (!this.target.loading) {
 			this.$nextTick(() => this._applyLineNumbers());
 		}

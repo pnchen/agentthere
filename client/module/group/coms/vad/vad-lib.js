@@ -138,12 +138,12 @@ export default async function create_vad_stream(stream, options) {
 		},
 		onVADMisfire: () => {
 			set_gate(false);
-			// 重置 GRU 隐藏状态，避免状态累积导致后续语音检测不灵敏
+			// Reset GRU hidden state to avoid state accumulation affecting subsequent VAD
 			if (vad && vad.frameProcessor) vad.frameProcessor.reset();
 		},
 		onSpeechEnd: () => {
 			set_gate(false);
-			// 重置 GRU 隐藏状态，避免"静音偏向"导致下一句话难激活
+			// Reset GRU hidden state to avoid "silence bias" making the next phrase hard to activate
 			if (vad && vad.frameProcessor) vad.frameProcessor.reset();
 		},
 		startOnLoad: false,
