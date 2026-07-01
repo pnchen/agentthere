@@ -19,8 +19,10 @@ export default {
 			return _.findWhere(this.media_pcs, { tag });
 		},
 
-		add_media(tag) {
-			this.close_media(tag);
+		ensure_media(tag) {
+			let m = this.media_pc(tag);
+			if (m) return m.pc;
+
 			const pc = this._create_media_pc({ tag });
 			this.media_pcs.push({ pc, tag });
 
@@ -97,7 +99,8 @@ export default {
 				console.log(`${tag} ice connection state:`, iceState);
 				if (iceState === 'failed') {
 					console.log(`${tag} failed, restarting...`);
-					this.add_media(tag);
+					this.close_media(tag);
+				this.ensure_media(tag);
 				}
 			};
 			pc.onsignalingstatechange = () => {
@@ -115,7 +118,8 @@ export default {
 			const OUT_TAG = 'media:' + this.peerId;
 			let m = this.media_pc(OUT_TAG);
 			if (!m || m.pc.connectionState === 'closed' || m.pc.connectionState === 'failed' || m.pc.connectionState === 'disconnected') {
-				this.add_media(OUT_TAG);
+				this.close_media(OUT_TAG);
+			this.ensure_media(OUT_TAG);
 				m = this.media_pc(OUT_TAG);
 			}
 

@@ -102,6 +102,10 @@ export default {
 				if (m) {
 					console.log(`[rtc-peer:signal] ICE → media pc tag=${tag}`);
 					addIceCandidateSafe(m.pc, iceCandidate);
+				} else if (tag) {
+					console.log(`[rtc-peer:signal] ICE → creating media pc tag=${tag}`);
+					const pc = this.ensure_media(tag);
+					addIceCandidateSafe(pc, iceCandidate);
 				} else {
 					if (!this.has_remote_description) {
 						console.log(`[rtc-peer:signal] ICE → buffered (no remote description yet, count=${this.pending_candidates.length + 1})`);
@@ -123,7 +127,8 @@ export default {
 				const m = this.media_pc(tag);
 				if (tag && tag.endsWith(this.remoteId)) {
 					console.log(`[rtc-peer:signal] new media PC tag=${tag}`);
-					var pc = this.add_media(tag);
+					this.close_media(tag);
+					var pc = this.ensure_media(tag);
 					return pc.setRemoteDescription(description).then(() => {
 						console.log(`[rtc-peer:signal] media setRemote OK, creating answer`);
 						return pc.setLocalDescription().then(() => {

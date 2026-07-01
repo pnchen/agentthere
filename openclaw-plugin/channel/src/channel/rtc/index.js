@@ -163,7 +163,6 @@ export async function startGroupMonitor(opts) {
             if (!answerTo || !peerId || peerId === agentId || answerTo === answerTopic) return;
             _revivePeer(peerId);
             client.publish(answerTo, JSON.stringify({ id: agentId, agent: true }));
-            await new Promise(r => setTimeout(r, 1000));
             connectPeer(peerId).catch(err => {
                 console.error(`[${rtcLabel}] connectPeer(query) failed: ${String(err)}`);
             });

@@ -216,6 +216,12 @@ export default {
 			const BACKOFF = RETRY_BACKOFF;
 			console.log(`[rtc-peer:conn] ====== _connect_loop START ======`);
 
+			// Offerer waits 1s before sending the first offer to let the
+			// non-offerer's per-peer signaling subscription settle.
+			if (this.offerer) {
+				await this.sleep(1000);
+			}
+
 			while (!this._dead) {
 				console.log(`[rtc-peer:conn] _connect_loop iteration start, _dead=${this._dead}`);
 				try {

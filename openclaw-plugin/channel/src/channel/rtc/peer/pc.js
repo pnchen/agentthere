@@ -91,6 +91,7 @@ export async function createPeer(params) {
 
     let dc = null;
     let closed = false;
+    let _closeResolve;
     let _connectionState = 'new';
 
     const doClose = () => {
@@ -106,6 +107,7 @@ export async function createPeer(params) {
         } catch {
             /* ignore */
         }
+        _closeResolve?.();
         callbacks.onClose();
     };
 
@@ -203,6 +205,7 @@ export async function createPeer(params) {
                 doClose();
             }
         },
+        closed: new Promise(resolve => { _closeResolve = resolve; }),
         close: doClose,
         getConnectionState: () => _connectionState
     };

@@ -1,7 +1,7 @@
 /**
  * AgentThere Peer — self-contained lifecycle object for one remote peer.
  *
- * Owns DataChannel, connection loop (offerer retry / non-offerer one-shot),
+ * Owns DataChannel, unified connection loop (retry with backoff),
  * media peers (in/out), signaling via MQTT, and file send.
  *
  * Created and torn down by the RTC orchestrator (../index.js).
@@ -16,6 +16,8 @@ import { getRuntime } from '../../../runtime.js';
 
 const CHUNK_SIZE = 65536;
 const BUFFERED_AMOUNT_THRESHOLD = 256 * 1024;
+const CONNECT_TIMEOUT = 20000;
+const RETRY_BACKOFF = [300, 1000, 3000, 10000, 30000, 60000];
 
 // ── shared helpers (also exported for orchestrator) ────────────────────
 
@@ -97,32 +99,27 @@ export class Peer {
 
         // Lifecycle
         this.mqtt_client = null;
-        this.stopped = false;
+        this._dead = false;
+        this._retry_count = 0;
+        this._retry_timer = null;
         this.offerer = opts.agent.id > opts.peerId;
     }
 
     // ── connect (called by orchestrator) ────────────────────────────────
 
     /**
-     * Subscribe to per-peer signaling and launch the connection loop.
-     *
-     * Offerer:  starts a retry-loop (fire-and-forget) that publishes SDP offers.
-     * Non-offerer:  awaits a single-shot connection (receives SDP offer, sends answer).
+     * Subscribe to per-peer signaling and launch the unified connection loop.
      */
     async connect(mqttClient) {
         this.mqtt_client = mqttClient;
 
         await this.subscribe();
 
-        if (this.offerer) {
-            this.startOffererLoop();
-        } else {
-            await this.startNonOfferer();
-        }
+        this._connect_loop();
 
-        // On MQTT reconnect, re-subscribe and re-launch.
+        // On MQTT reconnect, re-subscribe.
         this.on_mqtt_client_connect = () => {
-            if (this.stopped) return;
+            if (this._dead) return;
             this.subscribe().catch(() => {});
         };
         mqttClient.on('connect', this.on_mqtt_client_connect);
@@ -222,8 +219,9 @@ export class Peer {
     // ── close ───────────────────────────────────────────────────────────
 
     close() {
-        if (this.stopped) return;
-        this.stopped = true;
+        if (this._dead) return;
+        this._dead = true;
+        clearTimeout(this._retry_timer);
         if (this.mqtt_client) {
             this.mqtt_client.removeListener('connect', this.on_mqtt_client_connect);
             this.mqtt_client.unsubscribe(`${this.from_remote}/#`);
@@ -286,7 +284,13 @@ export class Peer {
             if (!candidate) return;
 
             if (tag === 'media:' + this.peerId) {
-                this.mediaInPeer?.addRemoteCandidate(candidate, mid);
+                if (!this.mediaInPeer) {
+                    this.ensureMediaInPeer()
+                        .then(mp => mp.addRemoteCandidate(candidate, mid))
+                        .catch(() => {});
+                } else {
+                    this.mediaInPeer.addRemoteCandidate(candidate, mid);
+                }
             } else if (tag === 'media:' + this.agent.id) {
                 this.mediaOutPeer?.addRemoteCandidate(candidate, mid);
             } else {
@@ -296,120 +300,113 @@ export class Peer {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  Internal: connection loops
+    //  Internal: connection loop
     // ══════════════════════════════════════════════════════════════════════
 
-    startOffererLoop() {
-        const BACKOFF = [300, 1000, 3000, 10000, 30000];
-        let retries = 0;
-        const peerId = this.peerId;
-        const label = this.rtc_label;
+    async init_pc() {
+        return new Promise(async (resolve, reject) => {
+            if (this._dead) return resolve();
+            const peerId = this.peerId;
+            const label = this.rtc_label;
 
-        (async () => {
-            while (!this.stopped) {
-                let gate = {};
-                try {
-                    this.pc = await createPeer({
-                        sessionId: randomUUID(),
-                        offerer: true,
-                        callbacks: {
-                            onAnswer: (sdp) => {
-                                this.mqtt_client.publish(
-                                    `${this.to_remote}/description`,
-                                    JSON.stringify({ description: { type: 'answer', sdp } })
-                                );
-                            },
-                            onOffer: (sdp) => {
-                                console.log(`[${label}] sending SDP offer to ${peerId}`);
-                                this.mqtt_client.publish(
-                                    `${this.to_remote}/description`,
-                                    JSON.stringify({ description: { type: 'offer', sdp } })
-                                );
-                            },
-                            onCandidate: (c, m) => {
-                                this.mqtt_client.publish(
-                                    `${this.to_remote}/candidate`,
-                                    JSON.stringify({ candidate: { candidate: c, sdpMid: m, sdpMLineIndex: 0 } })
-                                );
-                            },
-                            onDataChannel: (ch) => { this.dc = ch; },
-                            onOpen: () => {
-                                console.log(`[${label}] DataChannel open with ${peerId}`);
-                                this.connected = true;
-                                const ok = this.send(JSON.stringify({ type: 'profile', profile: this.agent.profile }));
-                                console.log(`[${label}] profile sent to ${peerId}: ${ok}`);
-                                if (gate.open) gate.open();
-                            },
-                            onMessage: (raw) => { this.onRawMessage?.(raw, this); },
-                            onClose: () => { if (gate.close) gate.close(new Error('disconnected')); },
-                        },
-                    });
-
-                    await Promise.race([
-                        new Promise(r => { gate.open = r; }),
-                        new Promise((_, reject) => {
-                            gate.close = reject;
-                            setTimeout(() => reject(new Error('timeout')), 25000);
-                        }),
-                    ]);
-
-                    gate = {};
-                    await new Promise(r => { gate.close = r; });
-
-                    retries = 0;
-                    this.pc?.close();
-                    this.pc = null;
-                    const delay = BACKOFF[Math.min(retries, BACKOFF.length - 1)];
-                    retries++;
-                    console.log(`[${label}] ${peerId} disconnected, retry #${retries} in ${delay}ms`);
-                    await new Promise(r => setTimeout(r, delay));
-                } catch (e) {
-                    if (this.stopped) return;
-                    this.pc?.close();
-                    this.pc = null;
-                    const delay = BACKOFF[Math.min(retries, BACKOFF.length - 1)];
-                    retries++;
-                    console.log(`[${label}] offer to ${peerId}: ${e.message}, retry #${retries} in ${delay}ms`);
-                    await new Promise(r => setTimeout(r, delay));
-                }
+            if (this.pc) {
+                this.pc.close();
+                this.pc = null;
             }
-        })().catch(e => {
-            if (!this.stopped) console.error(`[${label}] offerer loop crashed: ${String(e)}`);
+
+            console.log(`[${label}] ====== init_pc START ====== offerer=${this.offerer}`);
+
+            try {
+                this.pc = await createPeer({
+                    sessionId: randomUUID(),
+                    offerer: this.offerer,
+                    callbacks: {
+                        onAnswer: (sdp) => {
+                            this.mqtt_client.publish(
+                                `${this.to_remote}/description`,
+                                JSON.stringify({ description: { type: 'answer', sdp } })
+                            );
+                        },
+                        onOffer: (sdp) => {
+                            console.log(`[${label}] sending SDP offer to ${peerId}`);
+                            this.mqtt_client.publish(
+                                `${this.to_remote}/description`,
+                                JSON.stringify({ description: { type: 'offer', sdp } })
+                            );
+                        },
+                        onCandidate: (c, m) => {
+                            this.mqtt_client.publish(
+                                `${this.to_remote}/candidate`,
+                                JSON.stringify({ candidate: { candidate: c, sdpMid: m, sdpMLineIndex: 0 } })
+                            );
+                        },
+                        onDataChannel: (ch) => { this.dc = ch; },
+                        onOpen: () => {
+                            console.log(`[${label}] DataChannel open with ${peerId}`);
+                            this.connected = true;
+                            const ok = this.send(JSON.stringify({ type: 'profile', profile: this.agent.profile }));
+                            console.log(`[${label}] profile sent to ${peerId}: ${ok}`);
+                            clearTimeout(this._retry_timer);
+                            resolve();
+                        },
+                        onMessage: (raw) => { this.onRawMessage?.(raw, this); },
+                        onClose: () => {
+                            clearTimeout(this._retry_timer);
+                            reject(new Error('disconnected'));
+                        },
+                    },
+                });
+            } catch (err) {
+                clearTimeout(this._retry_timer);
+                reject(err);
+            }
         });
     }
 
-    async startNonOfferer() {
+    async serve() {
+        if (!this.pc) return;
+        await this.pc.closed;
+    }
+
+    async _connect_loop() {
         const label = this.rtc_label;
         const peerId = this.peerId;
 
-        this.pc = await createPeer({
-            sessionId: randomUUID(),
-            offerer: false,
-            callbacks: {
-                onAnswer: (sdp) => {
-                    this.mqtt_client.publish(`${this.to_remote}/description`, JSON.stringify({ description: { type: 'answer', sdp } }));
-                },
-                onOffer: (sdp) => {
-                    this.mqtt_client.publish(`${this.to_remote}/description`, JSON.stringify({ description: { type: 'offer', sdp } }));
-                },
-                onCandidate: (c, m) => {
-                    this.mqtt_client.publish(
-                        `${this.to_remote}/candidate`,
-                        JSON.stringify({ candidate: { candidate: c, sdpMid: m, sdpMLineIndex: 0 } })
-                    );
-                },
-                onDataChannel: (ch) => { this.dc = ch; },
-                onOpen: () => {
-                    console.log(`[${label}] DataChannel open with ${peerId}`);
-                    this.connected = true;
-                    const ok = this.send(JSON.stringify({ type: 'profile', profile: this.agent.profile }));
-                    console.log(`[${label}] profile sent to ${peerId}: ${ok}`);
-                },
-                onMessage: (raw) => { this.onRawMessage?.(raw, this); },
-                onClose: () => {
-                    console.log(`[${label}] peer disconnected: ${peerId}`);
-                },
-            },
+        // Offerer waits 1s before sending the first offer to let the
+        // non-offerer's per-peer signaling subscription settle.
+        if (this.offerer) {
+            await this._sleep(1000);
+        }
+
+        while (!this._dead) {
+            try {
+                await Promise.race([this.init_pc(), this._timeout(CONNECT_TIMEOUT)]);
+                if (this._dead) return;
+                this._retry_count = 0;
+                console.log(`[${label}] ${peerId} connected, entering serve`);
+                await this.serve();
+                console.log(`[${label}] serve ended, will retry`);
+            } catch (e) {
+                if (this._dead) return;
+                this._retry_count = (this._retry_count || 0) + 1;
+                const delay = RETRY_BACKOFF[Math.min(this._retry_count - 1, RETRY_BACKOFF.length - 1)];
+                console.log(`[${label}] ${peerId}: ${e}, retry #${this._retry_count} in ${delay}ms`);
+                await this._sleep(delay);
+            }
+        }
+
+        console.log(`[${label}] ====== _connect_loop END (_dead=true) ======`);
+    }
+
+    _sleep(ms) {
+        return new Promise(r => setTimeout(r, ms));
+    }
+
+    _timeout(ms) {
+        return new Promise((_, reject) => {
+            this._retry_timer = setTimeout(() => {
+                reject('timeout');
+            }, ms);
         });
     }
 

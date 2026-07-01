@@ -133,13 +133,7 @@ export default {
 				}
 				if (data.id && data.id !== this.peer_id) {
 					console.log(`[agentthere:discovery]   ✓ EMIT member-detected | id=${data.id}`);
-				// Delay 1s to give the other peer's per-peer signaling subscription
-				// time to settle before we start connecting.  Without this, the
-				// offerer's SDP offer may arrive before the subscription is active
-				// (QoS 0 → lost) and a retry cycle is needed.
-					setTimeout(() => {
-						this.$emit('member-detected', { id: data.id, profile: { agent: data.agent || undefined } });
-					}, 1000);
+					this.$emit('member-detected', { id: data.id, profile: { agent: data.agent || undefined } });
 				} else {
 					console.log(`[agentthere:discovery]   ⨯ self or no id, ignored`);
 				}
