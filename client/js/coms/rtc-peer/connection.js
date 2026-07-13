@@ -19,10 +19,34 @@ export default {
 		};
 	},
 
+	created() {
+		this._onVisibilityChange = () => {
+			if (document.visibilityState === 'visible') {
+				console.log('[rtc-peer:conn] visibilitychange → visible, checking PC');
+				const pcDead = this.pc && (
+					this.pc.signalingState === 'closed' ||
+					this.pc.connectionState === 'closed' ||
+					this.pc.connectionState === 'failed'
+				);
+				if (pcDead && this._serveResolve) {
+					console.log('[rtc-peer:conn] PC is dead, unblocking serve()');
+					const resolve = this._serveResolve;
+					this._serveResolve = null;
+					resolve();
+				}
+			}
+		};
+		document.addEventListener('visibilitychange', this._onVisibilityChange);
+	},
+
 	beforeUnmount() {
 		console.log(`[rtc-peer:conn] ====== beforeUnmount ====== _dead=${this._dead} pc=${!!this.pc}`);
 		this._dead = true;
 		clearTimeout(this._retry_timer);
+		this._serveResolve = null;
+		if (this._onVisibilityChange) {
+			document.removeEventListener('visibilitychange', this._onVisibilityChange);
+		}
 		if (this.pc) {
 			this.pc.close();
 			this.pc = null;
@@ -199,11 +223,16 @@ export default {
 				if (!pc || this._dead) return resolve();
 				this.add_local_tracks();
 				console.log(`[rtc-peer:conn] serve add_local_tracks done`);
+
+				// Store resolve so visibilitychange can unblock a stuck serve().
+				this._serveResolve = resolve;
+
 				const handler = event => {
 					const state = event.currentTarget.connectionState;
 					console.log(`[rtc-peer:conn] serve connectionstatechange → ${state}`);
 					if (state === 'disconnected' || state === 'failed' || state === 'closed') {
 						pc.removeEventListener('connectionstatechange', handler);
+						this._serveResolve = null;
 						console.log(`[rtc-peer:conn] serve EXIT via ${state}`);
 						resolve();
 					}

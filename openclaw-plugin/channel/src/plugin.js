@@ -209,7 +209,7 @@ export const agenttherePlugin = {
             }
 
             const peerId = parsedTarget?.kind === 'direct' ? parsedTarget.id : to;
-            const peer = getPeer(peerId);
+            const peer = getPeerByPeerId(peerId);
             let agentProfile;
             if (parsedTarget?.kind === 'group') {
                 const identity = resolveAgentIdentityForGroup(ctx.cfg ?? {}, parsedTarget.id);

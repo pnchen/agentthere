@@ -12,7 +12,7 @@
 				<a title="Send file" href="javascript:;" class="btn-icon" @click="select_file()"><i class="fa fa-folder"></i></a>
 				<input ref="input-file" type="file" class="d-none" @change="on_select_file($event)" />
 
-				<!-- <div class="btn-group">
+				<div class="btn-group">
 					<a
 						title="Turn on camera"
 						href="javascript:;"
@@ -40,9 +40,9 @@
 							</template>
 						</div>
 					</template>
-				</div> -->
+				</div>
 
-				<!-- <div class="btn-group">
+				<div class="btn-group">
 					<a
 						title="Turn on microphone"
 						href="javascript:;"
@@ -70,8 +70,8 @@
 							</template>
 						</div>
 					</template>
-				</div> -->
-				<!-- <a
+				</div>
+				<a
 					title="Share screen"
 					href="javascript:;"
 					class="btn-icon"
@@ -79,7 +79,7 @@
 					@click="constraints.display=!constraints.display"
 				>
 					<i class="fa fa-laptop"></i>
-				</a> -->
+				</a>
 
 				<a title="Send code" href="javascript:;" class="btn-icon" @click="$emit('input-code')"><i class="fa fa-code"></i></a>
 			</div>
