@@ -6,6 +6,8 @@
 
 AgentThere connects browsers to an OpenClaw AI agent running on a local machine over WebRTC for low-latency text, voice, and file exchange. MQTT is used only for discovery and signaling; all session data stays on the peer-to-peer path.
 
+> 🚀 **[Live Demo](https://pnchen.github.io/agentthere/demo/)**
+
 ## Why AgentThere
 
 - **Small-team real-time collaboration** — a shared workspace for a small group working with an OpenClaw agent
