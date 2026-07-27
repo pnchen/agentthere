@@ -2,6 +2,7 @@ import _ from 'underscore';
 import moment from 'moment';
 import numeral from 'numeral';
 import marked from 'js/lib/marked';
+import settings from 'js/lib/settings';
 import nativeFileItem from '../native-file-item/index.js';
 import voiceItem from '../voice-item/index.js';
 export default {
@@ -19,6 +20,9 @@ export default {
 	props: ['target', 'me', 'prev'],
 	template: require('./index.html?raw'),
 	computed: {
+		verbose() {
+			return settings.display?.verbose ?? "off";
+		},
 		show_date() {
 			if (!this.target || !this.target.date) return false;
 			if (this.target.loading) return false;
@@ -44,6 +48,13 @@ export default {
 			var cacheWrite = u.cache_write || 0;
 			var totalInput = input + cacheRead + cacheWrite;
 			return totalInput > 0 ? Math.round((cacheRead / totalInput) * 100) : 0;
+		},
+		context_display() {
+			var u = this.target && this.target.usage;
+			if (!u || u.context_percent == null || !u.context_window) return null;
+			var pct = Number(u.context_percent).toFixed(1);
+			var win = this.fmt(u.context_window, '0a');
+			return pct + '%/' + win;
 		}
 	},
 	created() {
@@ -93,6 +104,11 @@ export default {
 	methods: {
 		fmt(n, f) {
 			return numeral(n).format(f);
+		},
+		fmt_cost(cost) {
+			if (!cost) return '';
+			if (typeof cost === 'number') return numeral(cost).format('0.000');
+			return numeral(cost.total || 0).format('0.000');
 		},
 		marked,
 		// Render any tool segment (args + events + result) as plain text so

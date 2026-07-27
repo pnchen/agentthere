@@ -1,90 +1,91 @@
 # AgentThere
 
-> OpenClaw's WebRTC direct channel for real-time collaboration with AI agents.
+> WebRTC direct channel for real-time collaboration with AI agents.
 
 [English](README.md) | [中文](README.zh.md)
 
-AgentThere connects browsers to an OpenClaw AI agent running on a local machine over WebRTC for low-latency text, voice, and file exchange. MQTT is used only for discovery and signaling; all session data stays on the peer-to-peer path.
+AgentThere connects browsers to AI agents over WebRTC for low-latency text, voice, and file exchange. MQTT is used for discovery and signaling; session data stays on the peer-to-peer path. Powered by the [Pi coding agent SDK](https://github.com/earendil-works/pi-coding-agent).
 
 > 🚀 **[Live Demo](https://pnchen.github.io/agentthere/demo/)**
-
-## Why AgentThere
-
-- **Small-team real-time collaboration** — a shared workspace for a small group working with an OpenClaw agent
-- **Text, voice, and files in one place** — chat, calling, and file exchange in a single session
-- **Local-first deployment** — OpenClaw runs on your own machine, not a public server
-- **Controlled access** — peer admission through OpenClaw pairing
 
 ## Quick Start
 
 ### Prerequisites
 
-- [OpenClaw Gateway](https://docs.openclaw.ai/start/getting-started) running locally on your machine
-- An MQTT broker such as [EMQX](https://www.emqx.io/) or [Mosquitto](https://mosquitto.org/)
+- Node.js ≥ 18
+- An MQTT broker ([EMQX](https://www.emqx.io/), [Mosquitto](https://mosquitto.org/), etc.)
+- A Pi coding agent API key
 
-### 1. Install the plugin
+### 1. Install
 
 ```bash
-cd openclaw-plugin/channel
+cd pi-channel
 npm install
-cd ../..
-openclaw plugins install --link ./openclaw-plugin/channel
 ```
 
-### 2. Configure `~/.openclaw/openclaw.json`
+### 2. Configure
+
+Create `~/.agentthere/agentthere.json` (or set `AGENTTHERE_HOME`):
 
 ```json
 {
-  "channels": {
-    "agentthere": {
-      "enabled": true,
-      "dmPolicy": "pairing",
-      "mqtt": {
-        "url": "wss://your-broker:8084/mqtt",
-        "username": "user",
-        "password": "pass",
-        "namespace": "my-namespace"
-      },
-      "iceServers": [
-        { "urls": "stun:stun.l.google.com:19302" }
-      ],
-      "groups": {
-        "hello": {
-          "openclaw_agent_id": "my-agent",
-          "systemPrompt": "You are a helpful assistant.",
-          "skills": ["coding"],
-          "verbose": "on"
-        }
-      }
+  "mqtt": {
+    "url": "wss://your-broker:8084/mqtt",
+    "username": "user",
+    "password": "pass"
+  },
+  "ice_servers": [
+    { "urls": "stun:stun.l.google.com:19302" }
+  ],
+  "agents": {
+    "default": {
+      "model": "deepseek/deepseek-chat",
+      "workspace": "/path/to/agent-workspace"
+    }
+  },
+  "groups": {
+    "hello": {
+      "agent": "default"
     }
   }
 }
 ```
 
-#### Channel configuration
+#### Top-level fields
 
-| Field | Required | Type | Description |
-|------|:--:|------|------|
-| `enabled` | ✓ | boolean | Enable the channel |
-| `mqtt.url` | ✓ | string | MQTT broker URL (`wss://`) |
-| `mqtt.namespace` |  | string | Topic prefix for isolating multiple deployments; must match on both sides |
-| `mqtt.username` |  | string | MQTT username |
-| `mqtt.password` |  | string | MQTT password |
-| `dmPolicy` |  | string | Defaults to `pairing`; controls how new peers are admitted |
-| `iceServers` |  | array | STUN/TURN server list |
-| `allowFrom` |  | array | Allowlist of peer UIDs |
-| `groups` | ✓ | object | Group configuration; keys are group names |
+| Field | Required | Description |
+|---|---|---|
+| `mqtt` | ✓ | MQTT broker connection |
+| `ice_servers` |  | STUN/TURN servers (defaults to Google STUN) |
+| `agents` | ✓ | Agent definitions; key is the config alias |
+| `groups` | ✓ | Group definitions; key is the group name |
 
-#### Group configuration
+#### Agent fields
 
-| Field | Description |
-|------|------|
-| `openclaw_agent_id` | Binds the group to a specific agent |
-| `systemPrompt` | Group-level system prompt |
-| `skills` | Restricts available skills |
-| `verbose` | When set to `"on"`, shows tool-call details in the client |
+| Field | Required | Description |
+|---|---|---|
+| `model` | ✓ | Model ID in `provider/model` format (e.g. `deepseek/deepseek-chat`) |
+| `workspace` |  | Agent workspace directory (defaults to `workspaces/<key>` under config home) |
+| `stt` |  | Speech-to-text config with `wss` and `api_key` (optional, for voice) |
+| `tts` |  | Text-to-speech config with `providers` and `personas` (optional, for voice) |
+| `skills` |  | Per-skill environment variables |
+| `thinking_level` |  | Thinking budget: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"` |
 
-### 3. Start the client
+#### Group fields
+
+| Field | Required | Description |
+|---|---|---|
+| `agent` | ✓ | Agent config key to bind |
+
+Access control uses `users.jsonl` in the config home directory (pair-code based authorization).
+
+### 3. Run
+
+```bash
+node pi-channel/service.js
+```
+
+### 4. Start the client
 
 ```bash
 cd client
@@ -94,67 +95,53 @@ npm run dev
 
 Open `http://localhost:5173`, enter a group name, and start chatting.
 
-Production build:
+For production:
 
 ```bash
+cd client
 npm run build
 # Serve client/dist with any static file server
 ```
 
-### Optional: Install the STT plugin
-
-Voice uses OpenClaw Voice Realtime by default. If you want Aliyun ASR, install the STT plugin:
-
-```bash
-cd openclaw-plugin/stt
-npm install
-cd ../..
-openclaw plugins install --link ./openclaw-plugin/stt
-```
-
-## How it works
+## Architecture
 
 ```text
 Browser (Vue 3 SPA)
     │
-    │  MQTT signaling: discovery + SDP/ICE exchange only
+    │  MQTT signaling: discovery + SDP/ICE exchange
     ▼
-AgentThere Plugin (node-datachannel)
+Pi Channel Service (Node.js)
     │
     ├─ WebRTC DataChannel  → text chat, `_patch` stream, files
     └─ WebRTC MediaTrack   → Opus RTP voice traffic
-
-OpenClaw Gateway / AI Agent Loop
+    │
+Pi Coding Agent SDK
 ```
 
-### Transport roles
+### Transport
 
-- **MQTT** — peer discovery and signaling only
-- **WebRTC DataChannel** — chat messages, streaming patches, file metadata, and file chunks
+- **MQTT** — peer discovery and signaling
+- **WebRTC DataChannel** — chat, streaming patches, file transfer
 - **WebRTC MediaTrack** — microphone input and TTS output
-- **DTLS** — encryption for peer-to-peer traffic
-
-## What you can build on top
-
-- **Exploratory small-team collaboration** — a shared live workspace where a small group of people and an OpenClaw agent can brainstorm, test ideas, and iterate in real time
-- Voice-first agent interfaces
-- File-aware assistant flows
-- Mobile or desktop WebRTC clients
-- Lightweight embedded clients with the same channel protocol
-
-The current browser client is a reference implementation; the same channel can be extended to other WebRTC frontends.
+- **DTLS** — peer-to-peer encryption
 
 ## Project structure
 
 ```text
 agentthere/
-├── openclaw-plugin/
-│   ├── channel/            # AgentThere channel plugin
-│   └── stt/                # Optional STT plugin
+├── pi-channel/             # Node.js channel service
+│   ├── service.js          # Entry point
+│   ├── src/
+│   │   ├── agent.js        # Agent session management
+│   │   ├── config.js       # Single-file configuration (JSON5)
+│   │   ├── sdk-bridge.js   # Pi SDK ↔ channel protocol bridge
+│   │   ├── channel/
+│   │   │   ├── router/     # Koa-style middleware router
+│   │   │   ├── middleware/ # intent, history, auth-gate
+│   │   │   └── route/      # message, call handlers
+│   │   ├── rtc/            # WebRTC peer connections & VAD
+│   │   └── tools/          # Custom tools (file transfer, media)
 ├── client/                 # Browser SPA (Vue 3 + Vite)
-├── docs/
-│   ├── SPEC.en.md          # Protocol spec (English)
-│   └── SPEC.zh.md          # Protocol spec (Chinese)
 └── LICENSE
 ```
 
@@ -165,16 +152,12 @@ agentthere/
 | Signaling | MQTT (WSS) |
 | NAT traversal | STUN + TURN |
 | Data channel | WebRTC DataChannel |
-| Streaming protocol | `_patch` JSON ops |
+| Streaming | `_patch` JSON operations |
 | Audio codec | Opus RTP |
-| Gateway | Node.js + node-datachannel |
+| Service runtime | Node.js + node-datachannel |
+| Agent SDK | Pi coding agent |
 | Client | Vue 3 + Vite + WebRTC API |
 | Voice VAD | Silero ONNX |
-| Storage | IndexedDB |
-
-## Documentation
-
-- [SPEC.en.md](docs/SPEC.en.md) — protocol spec: MQTT topics, DataChannel message formats, `_patch` operations, and file transfer
 
 ## License
 

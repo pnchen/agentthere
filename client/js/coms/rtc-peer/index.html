@@ -8,7 +8,15 @@
 		playsinline
 		@play="interact_error_tip=null"
 	></video>
-	<audio class="d-none" ref="audio" playsinline @play="interact_error_tip=null"></audio>
+	<audio
+		v-for="entry in remote_audio_entries"
+		:key="entry.track.id"
+		:ref="el => bind_remote_audio_element(entry, el)"
+		class="d-none"
+		autoplay
+		playsinline
+		@play="interact_error_tip=null"
+	></audio>
 	<div class="m-3" v-if="remote_stream_type !== 'none'">
 		<button
 			type="button"

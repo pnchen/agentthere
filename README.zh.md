@@ -1,90 +1,91 @@
 # AgentThere
 
-> OpenClaw 的 WebRTC 直连通道，用于与 AI agent 实时协作。
+> WebRTC 直连通道，用于与 AI agent 实时协作。
 
 [English](README.md) | 中文
 
-AgentThere 通过 WebRTC 连接浏览器与运行在本地电脑上的 OpenClaw AI agent，支持低延迟的文本、语音和文件传输。MQTT 用于发现和信令，会话数据都通过点对点链路传输。
+AgentThere 通过 WebRTC 连接浏览器与 AI agent，支持低延迟的文本、语音和文件传输。MQTT 用于发现和信令，会话数据通过点对点链路传输。基于 [Pi coding agent SDK](https://github.com/earendil-works/pi-coding-agent) 驱动。
 
 > 🚀 **[在线 Demo](https://pnchen.github.io/agentthere/demo/)**
-
-## 为什么选择 AgentThere
-
-- **探索式小团队协作**：一个共享实时工作区，少量用户和 OpenClaw agent 可以一起头脑风暴、试验和迭代
-- **文本、语音和文件一体化**：聊天、通话和文件传输都在同一个会话里完成
-- **本地优先部署**：OpenClaw 运行在你自己的电脑上，不依赖公共服务器
-- **接入可控**：通过 OpenClaw 的配对授权机制加入
 
 ## 快速开始
 
 ### 准备条件
 
-- 已在本地电脑启动的 [OpenClaw Gateway](https://docs.openclaw.ai/start/getting-started)
-- 一个 MQTT broker，例如 [EMQX](https://www.emqx.io/) 或 [Mosquitto](https://mosquitto.org/)
+- Node.js ≥ 18
+- 一个 MQTT broker（[EMQX](https://www.emqx.io/)、[Mosquitto](https://mosquitto.org/) 等）
+- Pi coding agent API key
 
-### 1. 安装插件
+### 1. 安装
 
 ```bash
-cd openclaw-plugin/channel
+cd pi-channel
 npm install
-cd ../..
-openclaw plugins install --link ./openclaw-plugin/channel
 ```
 
-### 2. 配置 `~/.openclaw/openclaw.json`
+### 2. 配置
+
+创建 `~/.agentthere/agentthere.json`（或设置 `AGENTTHERE_HOME` 环境变量）：
 
 ```json
 {
-  "channels": {
-    "agentthere": {
-      "enabled": true,
-      "dmPolicy": "pairing",
-      "mqtt": {
-        "url": "wss://your-broker:8084/mqtt",
-        "username": "user",
-        "password": "pass",
-        "namespace": "my-namespace"
-      },
-      "iceServers": [
-        { "urls": "stun:stun.l.google.com:19302" }
-      ],
-      "groups": {
-        "hello": {
-          "openclaw_agent_id": "my-agent",
-          "systemPrompt": "You are a helpful assistant.",
-          "skills": ["coding"],
-          "verbose": "on"
-        }
-      }
+  "mqtt": {
+    "url": "wss://your-broker:8084/mqtt",
+    "username": "user",
+    "password": "pass"
+  },
+  "ice_servers": [
+    { "urls": "stun:stun.l.google.com:19302" }
+  ],
+  "agents": {
+    "default": {
+      "model": "deepseek/deepseek-chat",
+      "workspace": "/path/to/agent-workspace"
+    }
+  },
+  "groups": {
+    "hello": {
+      "agent": "default"
     }
   }
 }
 ```
 
-#### 通道配置
+#### 顶层字段
 
-| 字段 | 必填 | 类型 | 说明 |
-|------|:--:|------|------|
-| `enabled` | ✓ | boolean | 启用通道 |
-| `mqtt.url` | ✓ | string | MQTT broker 地址（`wss://`） |
-| `mqtt.namespace` |  | string | 主题前缀，用于隔离多套部署；两端必须一致 |
-| `mqtt.username` |  | string | MQTT 用户名 |
-| `mqtt.password` |  | string | MQTT 密码 |
-| `dmPolicy` |  | string | 默认 `pairing`；控制新 peer 的接入方式 |
-| `iceServers` |  | array | STUN/TURN 服务器列表 |
-| `allowFrom` |  | array | 允许列表（peer UID） |
-| `groups` | ✓ | object | 群组配置；键为群组名 |
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `mqtt` | ✓ | MQTT broker 连接配置 |
+| `ice_servers` |  | STUN/TURN 服务器（默认使用 Google STUN） |
+| `agents` | ✓ | Agent 定义；键为配置别名 |
+| `groups` | ✓ | 群组定义；键为群组名 |
 
-#### 群组配置
+#### Agent 字段
 
-| 字段 | 说明 |
-|------|------|
-| `openclaw_agent_id` | 绑定指定 agent |
-| `systemPrompt` | 群组级提示词 |
-| `skills` | 限制可用技能列表 |
-| `verbose` | 设置为 `"on"` 时，客户端展示工具调用细节 |
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `model` | ✓ | 模型 ID，格式 `provider/model`（如 `deepseek/deepseek-chat`） |
+| `workspace` |  | Agent 工作区目录（默认 `workspaces/<key>` 位于配置目录下） |
+| `stt` |  | 语音识别配置，包含 `wss` 和 `api_key`（可选，用于语音） |
+| `tts` |  | 语音合成配置，包含 `providers` 和 `personas`（可选，用于语音） |
+| `skills` |  | 按 skill 配置环境变量 |
+| `thinking_level` |  | 思考预算：`"off"`、`"minimal"`、`"low"`、`"medium"`、`"high"` |
 
-### 3. 启动客户端
+#### 群组字段
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `agent` | ✓ | 绑定的 agent 配置键名 |
+
+访问控制使用配置目录下的 `users.jsonl`（配对码授权机制）。
+
+### 3. 启动服务
+
+```bash
+node pi-channel/service.js
+```
+
+### 4. 启动客户端
 
 ```bash
 cd client
@@ -97,64 +98,50 @@ npm run dev
 生产构建：
 
 ```bash
+cd client
 npm run build
 # 使用任意静态文件服务托管 `client/dist` 目录
 ```
 
-### 可选：安装 STT 插件
-
-语音默认走 OpenClaw Voice Realtime；如果你想接入阿里云 ASR，可以安装 STT 插件：
-
-```bash
-cd openclaw-plugin/stt
-npm install
-cd ../..
-openclaw plugins install --link ./openclaw-plugin/stt
-```
-
-## 工作原理
+## 架构
 
 ```text
 浏览器（Vue 3 SPA）
     │
-    │  MQTT 信令：用于发现和 SDP/ICE 交换
+    │  MQTT 信令：发现 + SDP/ICE 交换
     ▼
-AgentThere 插件（node-datachannel）
+Pi Channel Service（Node.js）
     │
     ├─ WebRTC DataChannel  → 文字聊天、`_patch` 流、文件
     └─ WebRTC MediaTrack   → Opus RTP 语音流
-
-OpenClaw Gateway / AI Agent Loop
+    │
+Pi Coding Agent SDK
 ```
 
 ### 传输职责
 
-- **MQTT**：用于节点发现和信令
-- **WebRTC DataChannel**：承载聊天消息、流式 `_patch`、文件元数据和文件分块
-- **WebRTC MediaTrack**：承载麦克风输入和 TTS 输出
-- **DTLS**：用于点对点流量加密
-
-## 可以基于它做什么
-
-- **探索式小团队协作**：一个共享实时工作区，少量用户和 OpenClaw agent 可以一起头脑风暴、试验和迭代
-- 语音优先的 agent 界面
-- 支持文件处理的助手工作流
-- 移动端或桌面端 WebRTC 客户端
-- 使用同一通道协议的轻量级嵌入式客户端
-
-当前浏览器客户端是参考实现，同一通道也可扩展到其他 WebRTC 前端。
+- **MQTT** — 节点发现和信令
+- **WebRTC DataChannel** — 聊天、流式 patch、文件传输
+- **WebRTC MediaTrack** — 麦克风输入和 TTS 输出
+- **DTLS** — 点对点加密
 
 ## 项目结构
 
 ```text
 agentthere/
-├── openclaw-plugin/
-│   ├── channel/            # AgentThere channel plugin
-│   └── stt/                # 可选 STT 插件
+├── pi-channel/             # Node.js 通道服务
+│   ├── service.js          # 入口
+│   ├── src/
+│   │   ├── agent.js        # Agent 会话管理
+│   │   ├── config.js       # 单文件配置（JSON5）
+│   │   ├── sdk-bridge.js   # Pi SDK ↔ 通道协议桥接
+│   │   ├── channel/
+│   │   │   ├── router/     # Koa 风格中间件路由
+│   │   │   ├── middleware/ # intent、history、auth-gate
+│   │   │   └── route/      # message、call 处理器
+│   │   ├── rtc/            # WebRTC peer 连接 & VAD
+│   │   └── tools/          # 自定义工具（文件传输、媒体）
 ├── client/                 # 浏览器 SPA（Vue 3 + Vite）
-├── docs/
-│   ├── SPEC.en.md          # 英文版协议说明
-│   └── SPEC.zh.md          # 中文版协议说明
 └── LICENSE
 ```
 
@@ -165,16 +152,12 @@ agentthere/
 | 信令 | MQTT (WSS) |
 | NAT 穿透 | STUN + TURN |
 | 数据通道 | WebRTC DataChannel |
-| 流式协议 | `_patch` JSON ops |
+| 流式协议 | `_patch` JSON 操作 |
 | 音频编码 | Opus RTP |
-| Gateway | Node.js + node-datachannel |
+| 服务端 | Node.js + node-datachannel |
+| Agent SDK | Pi coding agent |
 | 客户端 | Vue 3 + Vite + WebRTC API |
 | 语音 VAD | Silero ONNX |
-| 存储 | IndexedDB |
-
-## 文档
-
-- [SPEC.zh.md](docs/SPEC.zh.md) — 协议说明：MQTT 主题、DataChannel 消息格式、`_patch` 操作和文件传输
 
 ## License
 

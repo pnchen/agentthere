@@ -63,6 +63,7 @@ export default {
 					Object.assign(settings.vad, src.vad);
 					settings.ice_servers.splice(0, settings.ice_servers.length, ...src.ice_servers);
 					settings.theme = src.theme;
+					Object.assign(settings.display, src.display);
 					this.dismiss('ok');
 				})
 				.catch(toastr.showError);

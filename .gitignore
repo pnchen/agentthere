@@ -17,3 +17,5 @@ client/dist/
 stats.html
 .claude/
 .playwright-mcp/
+pi-channel/logs/
+agentthere.json

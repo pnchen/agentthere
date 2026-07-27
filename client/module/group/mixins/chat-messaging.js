@@ -123,10 +123,6 @@ export default {
 						});
 						delete bootstrap._pushToolEvent;
 					}
-					if (bootstrap._appendReasoning) {
-						bootstrap.reasoning = (bootstrap.reasoning || '') + bootstrap._appendReasoning;
-						delete bootstrap._appendReasoning;
-					}
 					if (!_.isUndefined(bootstrap.text_chunk)) {
 						bootstrap.text = (bootstrap.text || '') + bootstrap.text_chunk;
 						delete bootstrap.text_chunk;
@@ -199,19 +195,13 @@ export default {
 					if (ev.toolCallId && !attachTo.toolCallId) attachTo.toolCallId = ev.toolCallId;
 				}
 
-				if (message._appendReasoning) {
-					if (!target.reasoning) target.reasoning = '';
-					target.reasoning += message._appendReasoning;
-				}
-
 				// Merge all other scalar fields
 				var skipKeys = {
 					id: 1,
 					_patch: 1,
 					_pushTool: 1,
 					_pushToolResult: 1,
-					_pushToolEvent: 1,
-					_appendReasoning: 1
+					_pushToolEvent: 1
 				};
 				for (var key in message) {
 					if (skipKeys[key]) continue;

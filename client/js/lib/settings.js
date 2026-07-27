@@ -35,7 +35,10 @@ var DEFAULTS = {
 		password: '',
 		namespace: ''
 	},
-	ice_servers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]
+	ice_servers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }],
+	display: {
+		verbose: "off"
+	}
 };
 
 // Merge saved state into defaults

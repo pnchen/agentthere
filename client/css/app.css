@@ -135,18 +135,7 @@ body {
    Agent Reasoning
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.agent-reasoning {
-	margin: 4px 0;
-	padding: 6px 8px;
-	background: rgba(0, 0, 0, 0.02);
-	border-radius: 6px;
-	border-left: 2px solid #b8b8ff;
-}
-.agent-reasoning details summary {
-	cursor: pointer;
-	user-select: none;
-}
-.agent-reasoning .reasoning-text {
+.reasoning-segment .reasoning-text {
 	max-height: 200px;
 	overflow-y: auto;
 	white-space: pre-wrap;

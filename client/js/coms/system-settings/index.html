@@ -94,7 +94,7 @@
 								autocomplete="off"
 							/>
 						</div>
-						<div class="alert alert-warning small py-1 px-2 mt-2 mb-0">All clients and the OpenClaw plugin must use the same namespace and broker.</div>
+						<div class="alert alert-warning small py-1 px-2 mt-2 mb-0">All clients and the AgentThere service must use the same namespace and broker.</div>
 					</div>
 
 					<!-- Tab 3: ICE Servers -->
@@ -239,6 +239,13 @@
 								<small class="text-muted">Delay between speech confirmation and opening the audio gate. Default 500</small>
 							</div>
 						</template>
+
+						<hr />
+						<h6 class="fw-semibold mb-2">Display</h6>
+						<div class="form-check form-switch">
+							<input class="form-check-input" type="checkbox" id="verbose-switch" v-model="item.display.verbose" true-value="on" false-value="off" />
+							<label class="form-check-label" for="verbose-switch">Show tool call details</label>
+						</div>
 					</div>
 				</div>
 			</div>

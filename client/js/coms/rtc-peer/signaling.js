@@ -80,6 +80,10 @@ export default {
 			console.log('[rtc-peer:signal] listener removed');
 		},
 
+		is_remote_media_tag(tag) {
+			return tag?.startsWith(`media:${this.remoteId}/`);
+		},
+
 		on_signaling_message(topic, message) {
 			var data;
 			try {
@@ -93,7 +97,7 @@ export default {
 
 			// ── candidate ────────────────────────────────────
 			if (key == 'candidate') {
-				var { tag, candidate } = data;
+				var { tag, media_id, media_type, candidate } = data;
 				var iceCandidate = candidate;
 				if (candidate && typeof candidate === 'object' && candidate.candidate) {
 					iceCandidate = new RTCIceCandidate(candidate);
@@ -104,7 +108,7 @@ export default {
 					addIceCandidateSafe(m.pc, iceCandidate);
 				} else if (tag) {
 					console.log(`[rtc-peer:signal] ICE → creating media pc tag=${tag}`);
-					const pc = this.ensure_media(tag);
+					const pc = this.ensure_media(tag, { media_id, media_type });
 					addIceCandidateSafe(pc, iceCandidate);
 				} else {
 					if (!this.has_remote_description) {
@@ -120,22 +124,22 @@ export default {
 
 			// ── description ────────────────────────────────────
 			if (key == 'description') {
-				var { tag, description } = data;
+				var { tag, media_id, media_type, description } = data;
 				console.log(`[rtc-peer:signal] <<< DESCRIPTION type=${description.type} tag=${tag} pcSignalingState=${this.pc.signalingState}`);
 
 				// media PC
 				const m = this.media_pc(tag);
-				if (tag && tag.endsWith(this.remoteId)) {
+				if (this.is_remote_media_tag(tag)) {
 					console.log(`[rtc-peer:signal] new media PC tag=${tag}`);
 					this.close_media(tag);
-					var pc = this.ensure_media(tag);
+					var pc = this.ensure_media(tag, { media_id, media_type });
 					return pc.setRemoteDescription(description).then(() => {
 						console.log(`[rtc-peer:signal] media setRemote OK, creating answer`);
 						return pc.setLocalDescription().then(() => {
 							console.log(`[rtc-peer:signal] media answer created, publishing`);
 							return this.mqtt_client.publish(
 								`${this.channel_remote}/description`,
-								JSON.stringify({ tag, description: pc.localDescription })
+								JSON.stringify({ tag, media_id, media_type, description: pc.localDescription })
 							);
 						});
 					});

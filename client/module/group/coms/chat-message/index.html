@@ -56,12 +56,6 @@
 					{{fmt(target.chunks_received,'0.0b')}} / {{fmt(target.file.size,'0.0b')}}, received
 				</div>
 			</div>
-			<div class="agent-reasoning" v-if="target.reasoning">
-				<details :open="!target.reasoning_complete">
-					<summary class="small text-muted">Reasoning<span v-if="!target.reasoning_complete" class="reasoning-dots">…</span></summary>
-					<div class="reasoning-text small text-muted mt-1" v-html="marked(target.reasoning)"></div>
-				</details>
-			</div>
 			<!-- Time-ordered segments: agent runs that emit _patch fill segments[]
 			     so text and tool calls render in the order they happened, like
 			     Claude Code. Older history records (and pre-_patch agents) skip
@@ -70,7 +64,21 @@
 				<template v-for="(seg, si) in target.segments" :key="seg.sid || ('seg'+si)">
 					<div v-if="seg.kind === 'text' && seg.text" class="message-text text-break mt-2" v-html="marked(seg.text)"></div>
 					<details
-						v-else-if="seg.kind === 'tool'"
+						v-else-if="seg.kind === 'reasoning' && verbose !== 'off'"
+						class="tool-segment reasoning-segment d-block mt-2 ps-2 py-1"
+						:class="{
+							'is-running': !seg.complete,
+							'is-complete': seg.complete
+						}"
+						:open="!seg.complete"
+					>
+						<summary class="tool-summary font-monospace">
+							<b class="me-2">Thinking</b>
+						</summary>
+						<div v-if="seg.text" class="reasoning-text small text-muted mt-1" v-html="marked(seg.text)"></div>
+					</details>
+					<details
+						v-else-if="seg.kind === 'tool' && verbose !== 'off'"
 						class="tool-segment d-block mt-2 ps-2 py-1"
 						:class="{
 							'is-running': seg.phase === 'start',
@@ -121,6 +129,10 @@
 						<span class="usage-cache" :class="{ 'text-danger': cache_rate < 97 }" v-if="cache_rate != null">cache {{cache_rate}}%</span>
 						<span class="usage-sep" v-if="target.usage.duration_ms"> · </span>
 						<span class="usage-duration" v-if="target.usage.duration_ms">{{(target.usage.duration_ms / 1000).toFixed(1)}}s</span>
+						<span class="usage-sep" v-if="target.usage.cost"> · </span>
+						<span class="usage-cost" v-if="target.usage.cost">${{fmt_cost(target.usage.cost)}}</span>
+						<span class="usage-sep" v-if="context_display"> · </span>
+						<span class="usage-context" v-if="context_display">{{context_display}}</span>
 					</span>
 				</small>
 			</div>
