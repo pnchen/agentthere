@@ -38,7 +38,6 @@ export async function callHandler(ctx) {
 
     console.log(`[agentthere-audio] stream open peerId=${peerId} groupId=${groupId}`);
 
-    let lastVoiceTs = 0;
     let currentRound = null;
     let hasOpenTranscript = false;
     let replyPending = false;
@@ -258,17 +257,6 @@ export async function callHandler(ctx) {
             catch (err) {
                 console.log(`[agentthere:voice] audio decode error for ${peerId}: ${String(err)}`);
                 continue;
-            }
-
-            const now = Date.now();
-            const isVoice = !isSilentPcm16(pcm, VOICE_PEAK_THRESHOLD);
-            if (isVoice) {
-                lastVoiceTs = now;
-            }
-            else {
-                if (now - lastVoiceTs > VOICE_HOLD_MS) {
-                    continue;
-                }
             }
 
             stt.feedPcm(pcm, 16000);

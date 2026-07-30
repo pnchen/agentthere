@@ -266,7 +266,7 @@ export function createStt({ config, onTranscript, onSpeechStarted, onError }) {
                         turn_detection: {
                             type: "server_vad",
                             threshold: 0,
-                            silence_duration_ms: 4000,
+                            silence_duration_ms: 1200,
                         },
                     },
                 }),
