@@ -11,14 +11,14 @@
 
 // ── lazy Opus encoder ──────────────────────────────────────────────
 
-import { getPeers } from "../../rtc/index.js";
+import { getPeers } from "./index.js";
 
 let _encodeOpusRtp;
 let _createOpusEncoder;
 let _FRAME_SAMPLES;
 async function _getOpusEncoder() {
     if (!_encodeOpusRtp) {
-        const mod = await import("../route/call/opus-codec.js");
+        const mod = await import("../routes/agent/call/opus-codec.js");
         _encodeOpusRtp = mod.encodeOpusRtp;
         _createOpusEncoder = mod.createOpusEncoder;
         _FRAME_SAMPLES = mod.FRAME_SAMPLES;

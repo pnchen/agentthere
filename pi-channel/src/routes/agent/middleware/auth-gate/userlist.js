@@ -13,7 +13,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { getConfigHomeDir } from "../../../config.js";
+import { getConfigHomeDir } from "../../../../config.js";
 
 const PAIR_CODE_LENGTH = 6;
 const PAIR_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I

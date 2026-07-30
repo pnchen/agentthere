@@ -29,6 +29,7 @@ class TtsTextQueue {
         this._pumpScheduled = false;
         this._opts = null;
         this._peerId = null;
+        this._textInputOpen = false;
     }
 
     push(msg) {
@@ -51,6 +52,7 @@ class TtsTextQueue {
     clear() {
         this._inputQueue = [];
         this._textQueue = [];
+        this._textInputOpen = false;
         this._speechPipeline.reset();
         this._readyAudio = null;
         this._readyText = null;
@@ -78,11 +80,26 @@ class TtsTextQueue {
     }
 
     writeText(chunk) {
+        this._textInputOpen = true;
         return this._speechPipeline.push(chunk);
     }
 
     flushText() {
+        this._textInputOpen = false;
         return this._speechPipeline.flush();
+    }
+
+    isIdle() {
+        return !this._textInputOpen &&
+            this._inputQueue.length === 0 &&
+            this._textQueue.length === 0 &&
+            !this._synthesisRunning &&
+            !this._readyAudio &&
+            !this._playing;
+    }
+
+    notifyIdle() {
+        if (this.isIdle()) this._opts?.onIdle?.();
     }
 
     resetText() {
@@ -186,6 +203,7 @@ class TtsTextQueue {
             if (this._synthesisAbort === controller) this._synthesisAbort = null;
             this._synthesisRunning = false;
             opts.onBusyChange?.(-1);
+            this.notifyIdle();
         }
     }
 
@@ -206,6 +224,7 @@ class TtsTextQueue {
         finally {
             this._playing = false;
             this._schedulePump();
+            this.notifyIdle();
         }
     }
 }
@@ -219,13 +238,15 @@ function _startConsumer(peerId, opts) {
         for await (const msg of queue) {
             if (msg === TTS_FLUSH) {
                 for (const text of queue.flushText()) queue.enqueueText(text);
+                queue.notifyIdle();
                 continue;
             }
             for (const text of queue.writeText(msg)) queue.enqueueText(text);
+            queue.notifyIdle();
         }
         for (const text of queue.flushText()) queue.enqueueText(text);
         queue._synthesisAbort?.abort();
-        _queues.delete(peerId);
+        if (_queues.get(peerId) === queue) _queues.delete(peerId);
     })().catch((err) => {
         console.error(`[tts] consumer error for ${peerId}: ${String(err)}`);
     });
@@ -233,10 +254,7 @@ function _startConsumer(peerId, opts) {
 
 export function ensureTtsConsumer(peerId, opts) {
     if (!opts?.ttsConfig || opts.ttsConfig.enabled === false) return;
-    if (_queues.has(peerId)) {
-        _queues.get(peerId).push(TTS_FLUSH);
-        return;
-    }
+    if (_queues.has(peerId)) return;
     const queue = new TtsTextQueue();
     _queues.set(peerId, queue);
     _startConsumer(peerId, opts);
@@ -250,10 +268,17 @@ export function pushTtsFlush(peerId) {
     _queues.get(peerId)?.push(TTS_FLUSH);
 }
 
+export function isTtsQueueIdle(peerId) {
+    return _queues.get(peerId)?.isIdle() ?? true;
+}
+
 export function closeTtsQueue(peerId) {
     const queue = _queues.get(peerId);
-    queue?.close();
-    queue?.resetText();
+    if (!queue) return;
+    if (_queues.get(peerId) !== queue) return;
+    _queues.delete(peerId);
+    queue.close();
+    queue.resetText();
 }
 
 export function cancelTtsQueue(peerId, onStop) {
@@ -263,6 +288,7 @@ export function cancelTtsQueue(peerId, onStop) {
     queue.bumpCancelEpoch();
     queue._synthesisAbort?.abort();
     queue.clear();
+    queue.notifyIdle();
 }
 
 export { TTS_FLUSH };

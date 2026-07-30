@@ -5,9 +5,11 @@
  * history and provides the delivery channel used by the RTC peers.
  */
 
-import { getPeers, getGroupPeers } from "../../rtc/index.js";
-import { createMessageId } from "../messaging.js";
 import { MediaOutSender } from "./media-out.js";
+import { getGroup } from "./index.js";
+import { createMessageId } from "../messaging.js";
+
+let _sidCounter = 0;
 
 class Round {
     constructor({ msgId, delivery, agentFrom }) {
@@ -17,6 +19,11 @@ class Round {
         this.placeholderSent = false;
         this._presetBubble = false;
         this._finalized = false;
+        // reply state (was replyTracker)
+        this.segments = [];
+        this.modelInfo = null;
+        this.reasoningSid = null;
+        this.usage = null;
     }
 
     send(payload) {
@@ -24,16 +31,16 @@ class Round {
         if (payload && payload.id === this.msgId) {
             let event;
             if (Array.isArray(payload._patch) && payload._patch.length > 0) {
-                const first = payload._patch[0];
-                const tail = String(first.path || "").split(".").pop() || "?";
-                event = `patch:${first.op}:${tail}`;
+                event = "patch";
             }
             else if (payload.model_info) event = "model";
             else if (payload.usage) event = "usage";
             else if (payload.loading === true) event = "placeholder";
             else if (payload.loading === false) event = "close";
             else event = "other";
-            if (!event.startsWith("patch:append_text")) {
+            // Patch messages are high-frequency transport details. Logging
+            // each one makes normal replies unnecessarily noisy.
+            if (event !== "patch") {
                 console.log(`[agentthere:round] send round=${this.msgId} evt=${event}`);
             }
         }
@@ -45,7 +52,8 @@ class Round {
     sendPlaceholder() {
         if (this.placeholderSent) return;
         this.placeholderSent = true;
-        this.send({ id: this.msgId, text: "", from: this.agentFrom, loading: true, segments: [] });
+        const from = typeof this.agentFrom === "function" ? this.agentFrom() : this.agentFrom;
+        this.send({ id: this.msgId, text: "", from, loading: true, segments: [] });
     }
 
     /** Close the visual loading indicator while keeping the round reusable. */
@@ -73,54 +81,46 @@ class Round {
         }
         this.send({ id: this.msgId, loading: false, ...(extra ?? {}) });
     }
+
+    // ── reply state lifecycle (was replyTracker) ───────────────────────
+    resetReplyState() {
+        // Voice transcript segments belong to the Round, not to one Agent
+        // response. Keep them when the next assistant turn starts.
+        this.segments = this.segments.filter((segment) =>
+            segment.kind === "text" && String(segment.sid).startsWith("t"),
+        );
+        this.modelInfo = null;
+        this.reasoningSid = null;
+        this.usage = null;
+        if (this.segments.length === 0) this.placeholderSent = false;
+    }
+
+    nextSid() {
+        _sidCounter += 1;
+        return `s${_sidCounter}`;
+    }
 }
 
 export class OutboundResponse {
     constructor(opts) {
-        this._mode = opts.mode;
+        this._send = opts.send ?? null;
         this._groupId = opts.groupId ?? null;
         this._peerId = opts.peerId ?? null;
-        this._send = opts.send ?? null;
-        this._getPeerIds = opts.getPeerIds ?? null;
         this.agentFrom = opts.agentFrom ?? null;
         this.mediaOut = opts.peerId ? new MediaOutSender(opts.peerId, opts.groupId) : null;
         this._rounds = [];
         this.current = null;
-        const round = this.newRound(opts.msgId);
-        if (opts.presetBubble) {
+        const round = null;
+        if (opts.presetBubble && round) {
             round._presetBubble = true;
             round.placeholderSent = true;
         }
     }
 
-    _getTargets() {
-        if (this._mode === "group" && this._groupId) return getGroupPeers(this._groupId);
-        if (this._peerId) {
-            const p = this._groupId
-                ? getPeers()?.get(`${this._groupId}.${this._peerId}`)
-                : [...(getPeers()?.values() ?? [])].find((peer) => peer.peerId === this._peerId);
-            return p ? [p] : [];
-        }
-        return [];
-    }
-
     _rawSend(payload) {
         if (this._send) return this._send(payload);
-        const data = JSON.stringify(payload);
-        const peerIds = this._getPeerIds?.();
-        const targets = peerIds
-            ? peerIds.map((peerId) => this._groupId
-                ? getPeers()?.get(`${this._groupId}.${peerId}`)
-                : [...(getPeers()?.values() ?? [])].find((peer) => peer.peerId === peerId)).filter(Boolean)
-            : this._getTargets();
-        let sent = 0;
-        for (const peer of targets) {
-            if (peer.send(data)) sent++;
-        }
-        if (targets.length === 0) {
-            console.warn(`[agentthere:send] zero targets — mode=${this._mode} groupId=${this._groupId} peerId=${this._peerId}`);
-        }
-        return sent;
+        const group = getGroup(this._groupId);
+        return group ? group.send(JSON.stringify(payload)) : 0;
     }
 
     newRound(msgId) {

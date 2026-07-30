@@ -7,11 +7,32 @@
 import { randomUUID } from "node:crypto";
 import { Peer, hashId } from "./peer/index.js";
 
-// ── peer registry (exported for consumers) ──────────────────────────────
+// ── process registries (exported for consumers) ─────────────────────────
 const _peers = new Map();
+const _groups = new Map();
+
+export function registerGroup(group) {
+    _groups.set(group.groupId, group);
+}
+
+export function unregisterGroup(groupId) {
+    _groups.delete(groupId);
+}
+
+export function getGroup(groupId) {
+    return _groups.get(groupId) || null;
+}
+
+export function getGroups() {
+    return [..._groups.values()];
+}
 
 export function getPeers() {
     return _peers;
+}
+
+export function getPeer(groupId, peerId) {
+    return _peers.get(`${groupId}.${peerId}`) || null;
 }
 
 export function getPeerByPeerId(peerId) {
@@ -28,10 +49,11 @@ export function getGroupPeers(groupId) {
 }
 
 export async function startGroupMonitor(opts) {
-    const { client, groupId, sessionPeerId, namespace, iceServers } = opts;
+    const { client, groupId, agentPeerId, namespace, iceServers } = opts;
     const rtcLabel = `agentthere/rtc:${groupId}`;
 
-    const buildAgentProfile = () => ({ ...opts.identity(), agent: true });
+    const profile = opts.profile || { agent: true };
+    profile.agent = true;
 
     let _onInboundStream = null;
     let _onRawMessage = null;
@@ -39,7 +61,7 @@ export async function startGroupMonitor(opts) {
     let stopped = false;
 
     const hGroup = hashId(groupId);
-    const hAgent = hashId(sessionPeerId);
+    const hAgent = hashId(agentPeerId);
     const ns = (path) => namespace ? `${namespace}/${path}` : path;
     const queryTopic = ns(`${hGroup}/query`);
     const answerTopic = ns(`${hGroup}/${hAgent}/answer`);
@@ -97,24 +119,32 @@ export async function startGroupMonitor(opts) {
 
         console.log(`[${rtcLabel}] new peer detected: ${peerId} (${reason})`);
 
-        const profile = buildAgentProfile();
         const peer = new Peer({
             peerId,
-            agent: { id: sessionPeerId, profile },
+            agent: { id: agentPeerId, profile },
             groupId,
             namespace,
             iceServers,
-            onRawMessage: (raw, p) => _onRawMessage?.(raw, p),
-            onInboundStream: (handle, p) => _onInboundStream?.(handle, p),
+            onRawMessage: (raw, p) => {
+                Promise.resolve(_onRawMessage?.(raw, p)).catch((error) => {
+                    console.error(`[${rtcLabel}] raw message handler failed: ${String(error)}`);
+                });
+            },
+            onInboundStream: (handle, p) => {
+                Promise.resolve(_onInboundStream?.(handle, p)).catch((error) => {
+                    console.error(`[${rtcLabel}] inbound stream handler failed: ${String(error)}`);
+                });
+            },
         });
 
         _peers.set(k, peer);
+        opts.onPeer?.(peer, groupId);
         peer.connect(client);
     };
 
     function on_mqtt_client_connect() {
         if (stopped) return;
-        console.log(`[${rtcLabel}] MQTT connected as "${opts.identity()?.name}" (${sessionPeerId})`);
+        console.log(`[${rtcLabel}] MQTT connected as "${profile.name}" (${agentPeerId})`);
         console.log(`[${rtcLabel}] topics: query=${queryTopic} answer=${answerTopic} bye=${byeTopic} will=${willTopic}`);
 
         const subs = [queryTopic, answerTopic, byeTopic, willTopic];
@@ -124,7 +154,7 @@ export async function startGroupMonitor(opts) {
             });
         }
 
-        client.publish(queryTopic, JSON.stringify({ answer_to: answerTopic, id: sessionPeerId, agent: true }));
+        client.publish(queryTopic, JSON.stringify({ answer_to: answerTopic, id: agentPeerId, agent: true }));
     }
 
     client.on("connect", on_mqtt_client_connect);
@@ -143,9 +173,9 @@ export async function startGroupMonitor(opts) {
 
         if (mqttTopic === queryTopic) {
             const peerId = data.id;
-            if (!data.answer_to || !peerId || peerId === sessionPeerId || data.answer_to === answerTopic) return;
+            if (!data.answer_to || !peerId || peerId === agentPeerId || data.answer_to === answerTopic) return;
             _revivePeer(peerId);
-            client.publish(data.answer_to, JSON.stringify({ id: sessionPeerId, agent: true }));
+            client.publish(data.answer_to, JSON.stringify({ id: agentPeerId, agent: true }));
             connectPeer(peerId, "query").catch((err) => {
                 console.error(`[${rtcLabel}] connectPeer(query) failed: ${String(err)}`);
             });
@@ -154,7 +184,7 @@ export async function startGroupMonitor(opts) {
 
         if (mqttTopic === answerTopic) {
             const peerId = data.id;
-            if (!peerId || peerId === sessionPeerId) return;
+            if (!peerId || peerId === agentPeerId) return;
             _revivePeer(peerId);
             connectPeer(peerId, "answer").catch((err) => {
                 console.error(`[${rtcLabel}] connectPeer(answer) failed: ${String(err)}`);
@@ -164,7 +194,7 @@ export async function startGroupMonitor(opts) {
 
         if (mqttTopic === byeTopic) {
             const byeId = data.id;
-            if (!byeId || byeId === sessionPeerId) return;
+            if (!byeId || byeId === agentPeerId) return;
             console.log(`[${rtcLabel}] BYE from ${byeId}`);
             _removePeer(byeId);
             return;
@@ -172,7 +202,7 @@ export async function startGroupMonitor(opts) {
 
         if (mqttTopic === willTopic) {
             const willId = data.id;
-            if (!willId || willId === sessionPeerId) return;
+            if (!willId || willId === agentPeerId) return;
             _markPeerLost(willId);
             return;
         }
@@ -188,7 +218,7 @@ export async function startGroupMonitor(opts) {
         if (stopped) return;
         stopped = true;
         clearInterval(_sweepInterval);
-        client.publish(byeTopic, JSON.stringify({ id: sessionPeerId }), { qos: 0, retain: false });
+        client.publish(byeTopic, JSON.stringify({ id: agentPeerId }), { qos: 0, retain: false });
         for (const [k, peer] of _peers) {
             if (peer.groupId === groupId) {
                 peer.close();
@@ -208,11 +238,11 @@ export async function startGroupMonitor(opts) {
             _onRawMessage = cb;
         },
         getPeerIds: () => [..._peers.values()].filter((p) => p.groupId === groupId).map((p) => p.peerId),
+        getPeers: () => [..._peers.values()].filter((p) => p.groupId === groupId),
         broadcastProfile: () => {
-            const profile = buildAgentProfile();
             for (const peer of _peers.values()) {
                 if (peer.groupId !== groupId) continue;
-                peer.agent.profile = profile;
+                peer.agent.profile = { ...profile };
                 peer.send(JSON.stringify({ type: "profile", profile }));
             }
         },

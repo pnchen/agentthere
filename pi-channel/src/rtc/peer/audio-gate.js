@@ -5,7 +5,7 @@
  * Import path adjusted for pi-channel layout.
  */
 
-import { decodeOpus } from "../../channel/route/call/opus-codec.js";
+import { decodeOpus } from "../../routes/agent/call/opus-codec.js";
 import fs from "node:fs";
 import path from "node:path";
 

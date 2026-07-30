@@ -6,7 +6,7 @@
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import path from "node:path";
-import { sendMedia } from "../file-transfer.js";
+import { sendMedia } from "../rtc/file-transfer.js";
 export function createSendChannelFileTool(deps) {
     console.log(`[pi-channel/file-tool] registering send_channel_file groups=${JSON.stringify(deps.getGroupIds())}`);
     return defineTool({

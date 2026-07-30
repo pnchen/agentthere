@@ -78,7 +78,7 @@ export function resolveSkillEnv({ skills, agentConfig, agentName = "unknown" }) 
     return new Map([...resolved].map(([name, item]) => [name, item.value]));
 }
 
-export function createAgentBashTool({ workspaceDir, skills, getAgentConfig, agentName }) {
+export function createAgentBashTool({ workspaceDir, skills, getAgentConfig, agentName, groupId }) {
     return createBashToolDefinition(workspaceDir, {
         spawnHook({ command, cwd, env: inheritedEnv }) {
             const env = resolveSkillEnv({
@@ -89,7 +89,11 @@ export function createAgentBashTool({ workspaceDir, skills, getAgentConfig, agen
             return {
                 command,
                 cwd,
-                env: { ...inheritedEnv, ...Object.fromEntries(env) },
+                env: {
+                    ...inheritedEnv,
+                    ...Object.fromEntries(env),
+                    AGENTTHERE_GROUP_ID: String(groupId),
+                },
             };
         },
     });

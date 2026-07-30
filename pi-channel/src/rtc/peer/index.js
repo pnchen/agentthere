@@ -11,13 +11,11 @@
  */
 
 import { randomUUID, createHash } from "node:crypto";
-import fs from "node:fs";
 import { createPeer, createMediaOutPeer, createMediaTaskOutPeer, createMediaInPeer } from "./pc.js";
 import { VADAudioTrackHandle } from "./audio-gate.js";
-import { createMessageId } from "../../channel/messaging.js";
+import { createRpc } from "./rpc.js";
+import { createHttpRpcHandler } from "./rpc-http.js";
 
-const CHUNK_SIZE = 65536;
-const BUFFERED_AMOUNT_THRESHOLD = 256 * 1024;
 const CONNECT_TIMEOUT = 20000;
 const RETRY_BACKOFF = [300, 1000, 3000, 10000, 30000, 60000];
 
@@ -25,35 +23,6 @@ const RETRY_BACKOFF = [300, 1000, 3000, 10000, 30000, 60000];
 
 export function hashId(id) {
     return createHash("sha256").update(String(id)).digest("hex").slice(0, 12);
-}
-
-// ── backpressure helper ─────────────────────────────────────────────────
-
-function waitForDrain(dc, timeoutMs = 30_000) {
-    return new Promise((resolve) => {
-        if (!dc || !dc.isOpen()) return resolve(false);
-        if (dc.bufferedAmount() < BUFFERED_AMOUNT_THRESHOLD) return resolve(true);
-
-        dc.setBufferedAmountLowThreshold(BUFFERED_AMOUNT_THRESHOLD);
-
-        let settled = false;
-        const settle = (value) => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timer);
-            clearInterval(check);
-            resolve(value);
-        };
-
-        const timer = setTimeout(() => settle(false), timeoutMs);
-
-        dc.onBufferedAmountLow(() => settle(dc.isOpen()));
-
-        const check = setInterval(() => {
-            if (!dc.isOpen()) return settle(false);
-            if (dc.bufferedAmount() < BUFFERED_AMOUNT_THRESHOLD) return settle(true);
-        }, 200);
-    });
 }
 
 // ── Peer ────────────────────────────────────────────────────────────────
@@ -89,6 +58,18 @@ export class Peer {
         this.mediaOutPeer = null;
         this.mediaTaskOutPeer = null;
         this.audioStream = null;
+
+        // RPC. Methods are discovered by calling them; there is no capability
+        // declaration handshake. Unknown methods return JSON-RPC -32601.
+        const httpRpcHandler = createHttpRpcHandler({
+            groupId: this.groupId,
+            peerId: this.peerId,
+        });
+        this.rpc = createRpc({
+            send: (text) => this.send(text),
+            label: this.peerId,
+            fallback: httpRpcHandler,
+        });
 
         // Lifecycle
         this.mqtt_client = null;
@@ -151,63 +132,6 @@ export class Peer {
         return this.connected && this.dc && this.dc.isOpen();
     }
 
-    // ── file send ───────────────────────────────────────────────────────
-
-    async sendFile({ filePath, fileName, mimeType, objectId: _objectId, kind, log }) {
-        const stat = fs.statSync(filePath);
-        const fileSize = stat.size;
-        const objectId = _objectId ?? randomUUID().replace(/-/g, "").slice(0, 16);
-        const messageId = createMessageId();
-
-        const meta = {
-            id: messageId,
-            file: { name: fileName, size: fileSize, type: mimeType },
-            object_id: objectId,
-            from: this.agent.profile,
-        };
-        if (kind) meta.kind = kind;
-        if (!this.send(JSON.stringify(meta))) {
-            log?.("[agentthere/file] failed to send metadata");
-            return { ok: false, messageId, objectId };
-        }
-
-        const fileBuffer = fs.readFileSync(filePath);
-        const ok = await this.sendChunks(objectId, fileBuffer, fileSize, log);
-
-        log?.(
-            `[agentthere/file] sent "${fileName}" (${Math.ceil(fileSize / CHUNK_SIZE)} chunks) to ${this.peerId} — ${ok ? "ok" : "incomplete"}`
-        );
-        return { ok, messageId, objectId };
-    }
-
-    async sendChunks(objectId, fileBuffer, fileSize, log) {
-        let offset = 0;
-        while (offset < fileSize) {
-            if (!this.isConnected()) {
-                log?.(`[agentthere/file] peer ${this.peerId} disconnected at offset ${offset}/${fileSize}`);
-                return false;
-            }
-            const ok = await waitForDrain(this.dc);
-            if (!ok) {
-                log?.(`[agentthere/file] peer ${this.peerId} drain timeout/closed at offset ${offset}/${fileSize}`);
-                return false;
-            }
-            const end = Math.min(offset + CHUNK_SIZE, fileSize);
-            const slice = fileBuffer.subarray(offset, end);
-            const base64Data = slice.toString("base64");
-            const chunkMsg = JSON.stringify({
-                object_id: objectId,
-                chunk: { object_id: objectId, offset, data: base64Data },
-            });
-            if (!this.send(chunkMsg)) {
-                log?.(`[agentthere/file] send failed ${this.peerId} offset ${offset}/${fileSize}`);
-                return false;
-            }
-            offset = end;
-        }
-        return true;
-    }
-
     // ── close ───────────────────────────────────────────────────────────
 
     close(reason = "unknown") {
@@ -227,6 +151,7 @@ export class Peer {
         this.mediaInPeer?.close();
         this.mediaOutPeer?.close();
         this.mediaTaskOutPeer?.close();
+        this.rpc.destroy();
         this.dc = null;
         this.connected = false;
     }
@@ -380,7 +305,12 @@ export class Peer {
                             clearTimeout(this._retry_timer);
                             resolve();
                         },
-                        onMessage: (raw) => { this.onRawMessage?.(raw, this); },
+                        onMessage: (raw) => {
+                            if (this.rpc.handleMessage(raw)) return;
+                            Promise.resolve(this.onRawMessage?.(raw, this)).catch((error) => {
+                                console.error(`[${label}] raw message handler failed: ${String(error)}`);
+                            });
+                        },
                         onClose: () => {
                             console.log(`[${label}] pc onClose ${peerId}`);
                             clearTimeout(this._retry_timer);

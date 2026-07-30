@@ -1,14 +1,18 @@
 /**
  * Single-file configuration for the standalone agentthere service.
  *
- * `loadConfig(homeDir)` stores the home directory in module state.
+ * `loadConfig()` resolves and stores the home directory in module state.
  * Subsequent calls to workspace/identity helpers read it automatically.
  */
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import JSON5 from "json5";
 
 let _homeDir = null;
+let _config = null;
+let _configWatcher = null;
+const _configListeners = new Set();
 
 const DEFAULT_ICE_SERVERS = [
     { urls: "stun:stun.l.google.com:19302" },
@@ -91,14 +95,24 @@ export function validateConfig(config) {
     return config;
 }
 
+function resolveConfigHomeDir() {
+    const argvHome = process.argv[2];
+    return argvHome
+        ? path.resolve(argvHome)
+        : path.resolve(process.env.AGENTTHERE_HOME || path.join(os.homedir(), ".agentthere"));
+}
+
 export function getConfigHomeDir() {
     if (!_homeDir) throw new Error("config home directory is not initialized");
     return _homeDir;
 }
 
-export function loadConfig(configDir) {
-    _homeDir = configDir;
-    const configPath = path.join(configDir, "agentthere.json");
+export function getConfig() {
+    return _config || loadConfig();
+}
+
+function readConfig() {
+    const configPath = path.join(_homeDir, "agentthere.json");
     try {
         const raw = fs.readFileSync(configPath, "utf-8");
         const config = normalizeConfig(JSON5.parse(raw));
@@ -109,6 +123,46 @@ export function loadConfig(configDir) {
         if (err?.code === "ENOENT") return { enabled: false };
         throw new Error(`failed to load ${configPath}: ${String(err)}`);
     }
+}
+
+function replaceConfig(nextConfig) {
+    if (!_config) {
+        _config = nextConfig;
+        return;
+    }
+    for (const key of Object.keys(_config)) delete _config[key];
+    Object.assign(_config, nextConfig);
+}
+
+async function reloadConfig() {
+    try {
+        replaceConfig(readConfig());
+        for (const listener of _configListeners) await listener(_config);
+        console.log("[pi-channel:config] synchronized agentthere.json");
+    }
+    catch (err) {
+        console.error(`[pi-channel:config] reload failed; keeping current config: ${String(err)}`);
+    }
+}
+
+function watchConfig() {
+    if (_configWatcher) return;
+    _configWatcher = fs.watch(_homeDir, (_event, filename) => {
+        if (!filename || filename.toString() === "agentthere.json") void reloadConfig();
+    });
+}
+
+export function onConfigChange(listener) {
+    _configListeners.add(listener);
+    return () => _configListeners.delete(listener);
+}
+
+export function loadConfig() {
+    _homeDir ||= resolveConfigHomeDir();
+    fs.mkdirSync(_homeDir, { recursive: true });
+    replaceConfig(readConfig());
+    watchConfig();
+    return _config;
 }
 
 export function resolveIceServers(config) {
@@ -136,11 +190,15 @@ export function resolveAgentWorkspaceDir(config, agentName) {
     return path.join(_homeDir, "workspaces", agentName);
 }
 
-export function resolveAgentIdentity(config, agentName) {
+export function resolveAgentIdentity(agentName) {
+    const config = getConfig();
     const workspaceDir = resolveAgentWorkspaceDir(config, agentName);
     const identity = loadWorkspaceIdentity(workspaceDir) || {};
     return {
         name: identity.name || agentName,
+        ...(identity.creature ? { creature: identity.creature } : {}),
+        ...(identity.vibe ? { vibe: identity.vibe } : {}),
+        ...(identity.emoji ? { emoji: identity.emoji } : {}),
         ...(identity.avatar ? { avatar: identity.avatar } : {}),
     };
 }
@@ -158,7 +216,7 @@ export function resolveAgentModel(config, agentName, modelRuntime) {
     return model;
 }
 
-// IDENTITY.md is the source of the public Agent name and avatar. The Agent key
+// IDENTITY.md is the source of the public Agent identity. The Agent key
 // remains the stable configuration alias and is used as the name fallback.
 const IDENTITY_PLACEHOLDER_VALUES = new Set([
     "pick something you like",
@@ -178,6 +236,9 @@ function parseIdentityMarkdown(content) {
         const value = cleaned.slice(colonIdx + 1).replace(/^[*_]+|[*_]+$/g, "").trim();
         if (!value || IDENTITY_PLACEHOLDER_VALUES.has(value.toLowerCase())) continue;
         if (label === "name") identity.name = value;
+        if (label === "creature") identity.creature = value;
+        if (label === "vibe") identity.vibe = value;
+        if (label === "emoji") identity.emoji = value;
         if (label === "avatar") identity.avatar = value;
     }
     return identity;
