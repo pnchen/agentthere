@@ -47,6 +47,7 @@ router.get("/", async (req, res, next) => {
             created: session.created,
             modified: session.modified,
             messageCount: session.messageCount,
+            topic: session.metadata?.topic || null,
             current: session.path === loadedFile,
         })));
     }
@@ -95,13 +96,19 @@ async function listSessions(workspaceDir, agentName, groupId) {
 function readMetadata(sessionFile) {
     try {
         let metadata = null;
+        let lastTopic = null;
         for (const line of fs.readFileSync(sessionFile, "utf8").split("\n")) {
             if (!line.trim()) continue;
             let entry;
             try { entry = JSON.parse(line); } catch { continue; }
-            if (entry.type === "custom" && entry.customType === "agentthere.session") metadata = entry.data;
+            if (entry.type === "custom" && entry.customType === "agentthere.session") {
+                metadata = entry.data;
+            }
+            if (entry.type === "custom_message" && entry.customType === "agentthere.topic") {
+                lastTopic = entry.details?.topic;
+            }
         }
-        return metadata;
+        return { ...(metadata || {}), topic: lastTopic || null };
     }
     catch {
         return null;

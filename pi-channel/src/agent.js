@@ -4,6 +4,7 @@ import path from "node:path";
 import { ReplyRenderer } from "./reply-renderer.js";
 import { GroupOutputStream } from "./group-output.js";
 import { createSendChannelFileTool } from "./tools/send-channel-file.js";
+import { createRecordTopicTool } from "./tools/record-topic.js";
 import { createAgentBashTool } from "./tools/skill-env.js";
 import { getConfig, getConfigHomeDir, resolveAgentIdentity, resolveAgentModel, resolveAgentWorkspaceDir } from "./config.js";
 import { getGroup } from "./rtc/index.js";
@@ -66,6 +67,10 @@ export async function createAgentSession({ agent, group, agentDir, modelRuntime 
         getAgentProfile: () => profile,
         getGroupIds,
     });
+    const _sessionRef = { current: null };
+    const recordTopicTool = createRecordTopicTool({
+        getSession: () => _sessionRef.current,
+    });
     const bash = createAgentBashTool({
         workspaceDir,
         skills: resourceLoader.getSkills().skills,
@@ -80,10 +85,12 @@ export async function createAgentSession({ agent, group, agentDir, modelRuntime 
         resourceLoader,
         model: resolveAgentModel({ agents: { [agentName]: agent.config } }, agentName, modelRuntime),
         ...(agentConfig.thinking_level !== undefined ? { thinkingLevel: agentConfig.thinking_level } : {}),
-        tools: ["read", "edit", "write", "bash", "send_channel_file"],
-        customTools: [bash, sendChannelFileTool],
+        tools: ["read", "edit", "write", "bash", "send_channel_file", "record_topic"],
+        customTools: [bash, sendChannelFileTool, recordTopicTool],
         sessionManager: sessionManager.get(agentName, groupId),
     });
+
+    _sessionRef.current = session;
 
     // ── reply renderer ─────────────────────────────────────────────────
     const output = new GroupOutputStream({
