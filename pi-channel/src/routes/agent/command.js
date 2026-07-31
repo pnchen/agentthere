@@ -52,6 +52,11 @@ function commandList(session, resourceLoader) {
             description: "Compact the current session context",
             source: "agent",
         },
+        {
+            name: "cancel",
+            description: "Abort the current agent loop",
+            source: "agent",
+        },
         ...getSessionCommands(session, resourceLoader).map((command) => ({
             name: command.name,
             description: command.description,
@@ -85,6 +90,9 @@ router.post("/", async (req, res, next) => {
         const session = req.$agent_session.session;
         if (commandText === "/compact") {
             await session.compact();
+        }
+        else if (commandText === "/cancel") {
+            session.abort();
         }
         else {
             await session.sendUserMessage(
